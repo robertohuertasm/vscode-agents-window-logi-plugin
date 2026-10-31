@@ -52,12 +52,13 @@ public static class Status
         chats.Append(session).OrderBy(Priority).First();
 
     // Lower ranks first: anything that needs the user beats anything that does not.
+    // Unread (finished, not looked at) needs the user; Working does not yet.
     public static int Priority(KeyState state) => state switch
     {
         KeyState.InputNeeded => 0,
         KeyState.Error => 1,
-        KeyState.Working => 2,
-        KeyState.Unread => 3,
+        KeyState.Unread => 2,
+        KeyState.Working => 3,
         _ => 4,
     };
 }

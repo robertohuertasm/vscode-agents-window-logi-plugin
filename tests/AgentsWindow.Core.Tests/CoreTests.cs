@@ -30,7 +30,7 @@ public class MostUrgentTests
     {
         Assert.Equal(KeyState.Unread, Status.MostUrgent(KeyState.Idle, [KeyState.Idle, KeyState.Unread]));
         Assert.Equal(KeyState.InputNeeded, Status.MostUrgent(KeyState.Working, [KeyState.InputNeeded]));
-        Assert.Equal(KeyState.Working, Status.MostUrgent(KeyState.Working, [KeyState.Unread]));
+        Assert.Equal(KeyState.Unread, Status.MostUrgent(KeyState.Working, [KeyState.Unread]));
     }
 }
 
@@ -50,7 +50,7 @@ public class RankingTests
             S("waiting", KeyState.InputNeeded, 50),
             S("error", KeyState.Error, 40),
         ]);
-        Assert.Equal(["waiting", "error", "working", "unread", "idle-new", "idle-old"], ranked.Select(s => s.Title));
+        Assert.Equal(["waiting", "error", "unread", "working", "idle-new", "idle-old"], ranked.Select(s => s.Title));
     }
 
     [Fact]
