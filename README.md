@@ -12,7 +12,7 @@ Drag these onto keys in Logi Options+ (group **VS Code Agents Window**):
 |---|---|
 | **Recent session 1…9** | The Nth non-archived session: waiting for input first, then error, then working, then most recently modified. Press opens it in the Agents window. |
 | **New session** | Opens the Agents window on the new-session composer. |
-| **Agents window** (folder) | Opens a folder with **New** and one key per session, after the back key the Plugin Service always draws top left. Pressing a session with one chat opens it; with several chats it shows a **Back** key to the sessions and one key per chat (the main chat is the session itself). The host's back key closes the folder from either level. A long press on a session opens it directly (experimental). |
+| **Agents window** (folder) | Opens a folder with **New** and one key per session, after the back key the Plugin Service always draws top left. Pressing a session with one chat opens it; with several chats it shows a **Back** key to the sessions and one key per chat (the main chat is the session itself). The host's back key closes the folder from either level. A session with several chats shows a white badge with the count. A long press on a session opens it directly instead of its chats. |
 
 Key colors: red waiting for input, purple error, amber working, green outline idle, grey dotted empty, dark red dotted VS Code not reachable.
 

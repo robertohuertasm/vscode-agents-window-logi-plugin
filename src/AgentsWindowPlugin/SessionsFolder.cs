@@ -90,7 +90,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
         yield return this.CreateCommandName(New);
         foreach (var s in this.Board.Ranked)
         {
-            yield return this.CreateCommandName($"{SessionPrefix}{s.State}{StateSeparator}{s.Resource}");
+            yield return this.CreateCommandName($"{SessionPrefix}{s.State}{s.Chats.Count}{StateSeparator}{s.Resource}");
         }
     }
 
@@ -101,7 +101,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
             var s = this.Board.Find(Resource(actionParameter, SessionPrefix));
-            return KeyFace.Label(s is null ? null : s.Chats.Count > 1 ? $"{s.Title} ({s.Chats.Count})" : s.Title);
+            return KeyFace.Label(s?.Title);
         }
         if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal))
         {
@@ -116,7 +116,8 @@ public sealed class SessionsFolder : PluginDynamicFolder
         if (actionParameter == New) return Faces.Glyph("+", imageSize);
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
-            return Faces.Ring(this.Board.Find(Resource(actionParameter, SessionPrefix))?.State ?? KeyState.None, imageSize);
+            var session = this.Board.Find(Resource(actionParameter, SessionPrefix));
+            return Faces.Ring(session?.State ?? KeyState.None, imageSize, session?.Chats.Count ?? 1);
         }
         if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal))
         {
@@ -125,26 +126,42 @@ public sealed class SessionsFolder : PluginDynamicFolder
         return Faces.Ring(KeyState.None, imageSize);
     }
 
+    // Session keys handle their own events so a hold can open the session instead of
+    // entering its chats: a short press acts on Release, a long press on LongPress.
+    // Other keys keep the default handling, which calls RunCommand.
     public override bool ProcessButtonEvent2(string actionParameter, DeviceButtonEvent2 buttonEvent)
     {
-        if (buttonEvent.EventType == DeviceButtonEventType.LongPress && actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
+        if (!actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
-            this.Plugin.Log.Info($"long press received after {buttonEvent.PressDuration} ms");
-            this.longPressHandled = true;
-            Opener.Open(Links.OpenSession(Resource(actionParameter, SessionPrefix)));
-            return true;
+            return base.ProcessButtonEvent2(actionParameter, buttonEvent);
         }
-        return base.ProcessButtonEvent2(actionParameter, buttonEvent);
+
+        this.Plugin.Log.Info($"session key event: {buttonEvent.EventType} after {buttonEvent.PressDuration} ms");
+        switch (buttonEvent.EventType)
+        {
+            case DeviceButtonEventType.Press:
+                this.longPressHandled = false;
+                return true;
+            case DeviceButtonEventType.LongPress:
+                this.longPressHandled = true;
+                Opener.Open(Links.OpenSession(Resource(actionParameter, SessionPrefix)));
+                return true;
+            case DeviceButtonEventType.RepeatPress:
+                return true;
+            case DeviceButtonEventType.Release:
+                if (!this.longPressHandled)
+                {
+                    this.PressSession(Resource(actionParameter, SessionPrefix));
+                }
+                this.longPressHandled = false;
+                return true;
+            default:
+                return false;
+        }
     }
 
     public override void RunCommand(string actionParameter)
     {
-        if (this.longPressHandled)
-        {
-            this.longPressHandled = false;
-            return;
-        }
-
         if (actionParameter == Back)
         {
             this.openSession = null;
@@ -157,21 +174,25 @@ public sealed class SessionsFolder : PluginDynamicFolder
         }
         else if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
-            var resource = Resource(actionParameter, SessionPrefix);
-            if (this.Board.Find(resource) is { Chats.Count: > 1 })
-            {
-                this.openSession = resource;
-                this.shownNames = [];
-                this.ButtonActionNamesChanged();
-            }
-            else
-            {
-                Opener.Open(Links.OpenSession(resource));
-            }
+            this.PressSession(Resource(actionParameter, SessionPrefix));
         }
         else if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal) && this.FindChat(Resource(actionParameter, ChatPrefix)) is { } found)
         {
             Opener.Open(Links.OpenSession(found.Session.Resource, found.Chat.ChatId));
+        }
+    }
+
+    private void PressSession(string resource)
+    {
+        if (this.Board.Find(resource) is { Chats.Count: > 1 })
+        {
+            this.openSession = resource;
+            this.shownNames = [];
+            this.ButtonActionNamesChanged();
+        }
+        else
+        {
+            Opener.Open(Links.OpenSession(resource));
         }
     }
 

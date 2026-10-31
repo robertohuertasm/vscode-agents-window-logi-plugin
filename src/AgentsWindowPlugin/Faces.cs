@@ -5,7 +5,9 @@ using AgentsWindow;
 // Draws key faces: a status ring above the label row Options+ reserves.
 internal static class Faces
 {
-    public static BitmapImage Ring(KeyState state, PluginImageSize size)
+    // `chats` > 1 adds a badge with the chat count at the ring's top right, so keys that
+    // open a chat list look different from keys that open a session.
+    public static BitmapImage Ring(KeyState state, PluginImageSize size, int chats = 1)
     {
         var (rgb, style) = KeyFace.For(state);
         var color = new BitmapColor(rgb.R, rgb.G, rgb.B);
@@ -29,6 +31,19 @@ internal static class Faces
                 }
                 break;
         }
+
+        if (chats > 1)
+        {
+            var br = r * 0.55f;
+            var bx = cx + r * 0.85f;
+            var by = cy - r * 0.85f;
+            b.FillCircle(bx, by, br + Math.Max(2, b.Width / 40f), BitmapColor.Black);
+            b.FillCircle(bx, by, br, BitmapColor.White);
+            var text = chats > 9 ? "9+" : chats.ToString();
+            var box = (int)(br * 2);
+            b.DrawText(text, (int)(bx - br), (int)(by - br), box, box, BitmapColor.Black, (int)(br * 1.3f), 0, 0, null);
+        }
+
         return b.ToImage();
     }
 
