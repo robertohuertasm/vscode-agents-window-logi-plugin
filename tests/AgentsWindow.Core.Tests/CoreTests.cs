@@ -7,6 +7,7 @@ public class StatusTests
 {
     [Theory]
     [InlineData(33u, KeyState.Idle)]
+    [InlineData(1u, KeyState.Unread)]
     [InlineData(40u, KeyState.Working)]
     [InlineData(24u, KeyState.InputNeeded)]
     [InlineData(56u, KeyState.InputNeeded)]
@@ -22,6 +23,17 @@ public class StatusTests
     }
 }
 
+public class MostUrgentTests
+{
+    [Fact]
+    public void SessionTakesItsMostUrgentChat()
+    {
+        Assert.Equal(KeyState.Unread, Status.MostUrgent(KeyState.Idle, [KeyState.Idle, KeyState.Unread]));
+        Assert.Equal(KeyState.InputNeeded, Status.MostUrgent(KeyState.Working, [KeyState.InputNeeded]));
+        Assert.Equal(KeyState.Working, Status.MostUrgent(KeyState.Working, [KeyState.Unread]));
+    }
+}
+
 public class RankingTests
 {
     private static Session S(string id, KeyState state, int minutesAgo, bool archived = false) =>
@@ -32,12 +44,13 @@ public class RankingTests
     {
         var ranked = Ranking.Rank([
             S("idle-new", KeyState.Idle, 1),
+            S("unread", KeyState.Unread, 60),
             S("working", KeyState.Working, 30),
             S("idle-old", KeyState.Idle, 10),
             S("waiting", KeyState.InputNeeded, 50),
             S("error", KeyState.Error, 40),
         ]);
-        Assert.Equal(["waiting", "error", "working", "idle-new", "idle-old"], ranked.Select(s => s.Title));
+        Assert.Equal(["waiting", "error", "working", "unread", "idle-new", "idle-old"], ranked.Select(s => s.Title));
     }
 
     [Fact]

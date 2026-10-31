@@ -8,6 +8,8 @@ public enum KeyState
     InputNeeded,
     Error,
     Working,
+    // Finished but not looked at since: idle without SessionStatus.IsRead. VS Code shows a blue dot.
+    Unread,
     Idle,
 }
 
@@ -32,16 +34,22 @@ public static class Status
     private const uint Error = 1 << 1;
     private const uint InProgress = 1 << 3;
     private const uint InputNeeded = (1 << 3) | (1 << 4);
+    private const uint IsRead = 1 << 5;
     private const uint IsArchived = 1 << 6;
 
     public static KeyState ToKeyState(uint status) =>
         (status & InputNeeded) == InputNeeded ? KeyState.InputNeeded
         : (status & Error) != 0 ? KeyState.Error
         : (status & InProgress) != 0 ? KeyState.Working
-        : (status & Idle) != 0 ? KeyState.Idle
+        : (status & IsRead) == 0 ? KeyState.Unread
         : KeyState.Idle;
 
     public static bool IsArchivedFlag(uint status) => (status & IsArchived) != 0;
+
+    // The session key shows its most urgent chat, so a session whose main chat is idle
+    // but has a side chat waiting or unread is not shown as plain idle.
+    public static KeyState MostUrgent(KeyState session, IEnumerable<KeyState> chats) =>
+        chats.Append(session).OrderBy(Priority).First();
 
     // Lower ranks first: anything that needs the user beats anything that does not.
     public static int Priority(KeyState state) => state switch
@@ -49,6 +57,7 @@ public static class Status
         KeyState.InputNeeded => 0,
         KeyState.Error => 1,
         KeyState.Working => 2,
-        _ => 3,
+        KeyState.Unread => 3,
+        _ => 4,
     };
 }

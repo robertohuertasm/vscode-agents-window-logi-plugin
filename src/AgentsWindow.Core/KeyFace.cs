@@ -25,6 +25,7 @@ public static class KeyFace
         KeyState.InputNeeded => (new Rgb(230, 40, 40), RingStyle.Filled),
         KeyState.Error => (new Rgb(200, 60, 200), RingStyle.Filled),
         KeyState.Working => (new Rgb(240, 180, 0), RingStyle.Filled),
+        KeyState.Unread => (new Rgb(110, 160, 230), RingStyle.Filled),
         KeyState.Idle => (new Rgb(0, 160, 64), RingStyle.Outline),
         KeyState.Offline => (new Rgb(140, 50, 50), RingStyle.Dotted),
         _ => (new Rgb(70, 70, 70), RingStyle.Dotted),

@@ -31,7 +31,8 @@ public static class SessionParser
             }
         }
 
-        return new Session(resource, Str(item, "title") ?? "", project, Status.ToKeyState(status), Status.IsArchivedFlag(status), modified, chats, defaultChat);
+        var state = Status.MostUrgent(Status.ToKeyState(status), chats.Select(c => c.State));
+        return new Session(resource, Str(item, "title") ?? "", project, state, Status.IsArchivedFlag(status), modified, chats, defaultChat);
     }
 
     public static IReadOnlyList<Session> ParseList(JsonElement result)
