@@ -1,0 +1,51 @@
+namespace AgentsWindow;
+
+// What a key shows. Derived from AHP's SessionStatus bit field.
+public enum KeyState
+{
+    None,
+    Offline,
+    InputNeeded,
+    Error,
+    Working,
+    Idle,
+}
+
+// ChatId is the id used in open links; null for the session's default chat.
+public sealed record Chat(string Resource, string? ChatId, string Title, KeyState State);
+
+public sealed record Session(
+    string Resource,
+    string Title,
+    string? Project,
+    KeyState State,
+    bool Archived,
+    DateTimeOffset ModifiedAt,
+    IReadOnlyList<Chat> Chats);
+
+public static class Status
+{
+    private const uint Idle = 1;
+    private const uint Error = 1 << 1;
+    private const uint InProgress = 1 << 3;
+    private const uint InputNeeded = (1 << 3) | (1 << 4);
+    private const uint IsArchived = 1 << 6;
+
+    public static KeyState ToKeyState(uint status) =>
+        (status & InputNeeded) == InputNeeded ? KeyState.InputNeeded
+        : (status & Error) != 0 ? KeyState.Error
+        : (status & InProgress) != 0 ? KeyState.Working
+        : (status & Idle) != 0 ? KeyState.Idle
+        : KeyState.Idle;
+
+    public static bool IsArchivedFlag(uint status) => (status & IsArchived) != 0;
+
+    // Lower ranks first: anything that needs the user beats anything that does not.
+    public static int Priority(KeyState state) => state switch
+    {
+        KeyState.InputNeeded => 0,
+        KeyState.Error => 1,
+        KeyState.Working => 2,
+        _ => 3,
+    };
+}

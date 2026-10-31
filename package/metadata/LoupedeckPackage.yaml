@@ -1,0 +1,29 @@
+# Plugin manifest: https://logitech.github.io/actions-sdk-docs/
+type: plugin4
+
+# Immutable identifier. Also names the log file (AgentsWindow.log) and the reload
+# deep link (loupedeck://plugin/AgentsWindow/reload). Distinct from the Herdr plugin.
+name: AgentsWindow
+displayName: VS Code Agents Window
+description: Live status keys for VS Code Agents window sessions, one-press focus, and a folder to browse sessions and their chats.
+
+# The only version number: the build reads it from here.
+version: 0.1.0
+
+author: Roberto Huertas
+copyright: Copyright © 2026 Roberto Huertas
+# LogiPluginApi 6.4 targets .NET 10, which the Plugin Service runs from 6.4.
+minimumLoupedeckVersion: 6.4
+
+pluginFileName: AgentsWindowPlugin.dll
+
+# macOS only: reads VS Code's endpoint under ~/Library and opens links with `open`.
+pluginFolderMac: bin
+
+supportedDevices:
+    - MxCreativeKeypad
+    - LoupedeckCtFamily
+
+pluginCapabilities:
+
+license: MIT
