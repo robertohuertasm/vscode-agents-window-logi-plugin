@@ -7,8 +7,8 @@ using AgentsWindow;
 // (top left), which closes the folder, so the sessions level adds none. The chats
 // level adds a Back key that returns to the sessions, then one key per chat; the main
 // chat's key opens the session itself.
-// Pressing a session with one chat opens it; with several chats it enters the chat level.
-// A long press on a session always opens it (experimental: the Keypad may not send LongPress).
+// A short press on a session opens it. A long press on a session with several chats
+// (badged with the count) enters its chat level.
 public sealed class SessionsFolder : PluginDynamicFolder
 {
     private const string Back = "back";
@@ -143,8 +143,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
                 return true;
             case DeviceButtonEventType.LongPress:
                 this.longPressHandled = true;
-                this.Plugin.Log.Info("long press: opening the session directly");
-                Opener.Open(Links.OpenSession(Resource(actionParameter, SessionPrefix)));
+                this.LongPressSession(Resource(actionParameter, SessionPrefix));
                 return true;
             case DeviceButtonEventType.RepeatPress:
                 return true;
@@ -182,10 +181,15 @@ public sealed class SessionsFolder : PluginDynamicFolder
         }
     }
 
-    private void PressSession(string resource)
+    // A short press always opens the session.
+    private void PressSession(string resource) => Opener.Open(Links.OpenSession(resource));
+
+    // A long press enters the chats of a session that has several; otherwise it opens it.
+    private void LongPressSession(string resource)
     {
         if (this.Board.Find(resource) is { Chats.Count: > 1 })
         {
+            this.Plugin.Log.Info("long press: showing the session's chats");
             this.openSession = resource;
             this.shownNames = [];
             this.ButtonActionNamesChanged();
