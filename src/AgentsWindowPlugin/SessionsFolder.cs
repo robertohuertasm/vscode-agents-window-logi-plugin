@@ -112,7 +112,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
 
     public override string GetCommandDisplayName(string actionParameter, PluginImageSize imageSize)
     {
-        if (this.IsArmed(actionParameter)) return "Sure?";
+        if (this.IsArmed(actionParameter)) return "Archive?";
         if (actionParameter == Back) return "Back";
         if (actionParameter == New) return "New";
         if (actionParameter == NewChat) return "New chat";
