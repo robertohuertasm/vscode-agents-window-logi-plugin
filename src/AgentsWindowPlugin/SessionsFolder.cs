@@ -44,9 +44,20 @@ public sealed class SessionsFolder : PluginDynamicFolder
         return true;
     }
 
+    // The host's own back key closes the folder without telling RunCommand, so the
+    // level is reset whenever the folder opens or closes. Otherwise it reopens on the
+    // chats of the last session.
     public override bool Activate()
     {
-        this.openSession = null;
+        this.Plugin.Log.Info("folder activated");
+        this.ResetLevel();
+        return true;
+    }
+
+    public override bool Deactivate()
+    {
+        this.Plugin.Log.Info("folder deactivated");
+        this.ResetLevel();
         return true;
     }
 
@@ -157,6 +168,21 @@ public sealed class SessionsFolder : PluginDynamicFolder
         else if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal) && this.FindChat(actionParameter[ChatPrefix.Length..]) is { } found)
         {
             Opener.Open(Links.OpenSession(found.Session.Resource, found.Chat.ChatId));
+        }
+    }
+
+    private void ResetLevel()
+    {
+        if (this.openSession is null) return;
+        this.openSession = null;
+        this.shownNames = [];
+        try
+        {
+            this.ButtonActionNamesChanged();
+        }
+        catch (Exception e)
+        {
+            this.Plugin.Log.Error(e, "could not reset the Agents window folder");
         }
     }
 
