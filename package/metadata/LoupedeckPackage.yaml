@@ -17,8 +17,9 @@ minimumLoupedeckVersion: 6.4
 
 pluginFileName: AgentsWindowPlugin.dll
 
-# macOS only: reads VS Code's endpoint under ~/Library and opens links with `open`.
+# macOS is tested. Windows support (named pipe endpoint under %APPDATA%) is written but untested.
 pluginFolderMac: bin
+pluginFolderWin: bin
 
 supportedDevices:
     - MxCreativeKeypad

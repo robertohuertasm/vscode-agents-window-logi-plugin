@@ -124,6 +124,18 @@ public class EndpointTests
     [InlineData("[]")]
     public void IgnoresUnsupported(string json) => Assert.Null(EndpointRegistry.Parse(json));
 
+    [Theory]
+    [InlineData(@"\\.\pipe\vscode-agent-host-abc-def", "vscode-agent-host-abc-def")]
+    [InlineData("/tmp/vscode-ah-1/x.sock", null)]
+    public void DetectsWindowsPipes(string path, string? expected) => Assert.Equal(expected, EndpointRegistry.PipeName(path));
+
+    [Fact]
+    public void ParsesWindowsPipeEndpoint()
+    {
+        var json = Valid.Replace("\"/tmp/x.sock\"", "\"\\\\\\\\.\\\\pipe\\\\vscode-agent-host-a\"");
+        Assert.Equal(@"\\.\pipe\vscode-agent-host-a", EndpointRegistry.Parse(json)?.SocketPath);
+    }
+
     [Fact]
     public void FindLiveSkipsDeadPids()
     {

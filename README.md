@@ -2,7 +2,7 @@
 
 A Logitech MX Creative Keypad plugin that shows VS Code Agents window sessions and their state on the keys, and opens a session with a press.
 
-Status: 0.1.0, first working version. macOS only.
+Status: 0.1.0, first working version. Tested on macOS. Windows support is written but untested.
 
 ## Actions
 
@@ -18,7 +18,7 @@ Key colors: red waiting for input, purple error, amber working, green outline id
 
 ## How it works
 
-- **State:** VS Code's local Agent Host publishes an [Agent Host Protocol](https://microsoft.github.io/agent-host-protocol/) endpoint for other local processes. The plugin finds it through `~/Library/Application Support/Code/agent-host/local-endpoint/entries/*.json`, connects over the Unix socket with the entry's token, and polls `listSessions` once a second. The token is never logged.
+- **State:** VS Code's local Agent Host publishes an [Agent Host Protocol](https://microsoft.github.io/agent-host-protocol/) endpoint for other local processes. The plugin finds it through `agent-host/local-endpoint/entries/*.json` in VS Code's user data directory (`~/Library/Application Support/Code` on macOS, `%APPDATA%\Code` on Windows), connects over the Unix socket (macOS) or named pipe (Windows) with the entry's token, and polls `listSessions` once a second. The token is never logged.
 - **Actions:** archiving dispatches `session/isArchivedChanged` or `chat/isArchivedChanged`, and New chat sends `createChat`, each after subscribing to the target channel (the host only acts on loaded channels).
 - **Focus:** a press opens `vscode://agents/agent-host-session/<provider>/<sessionId>[/chat/<chatId>]`, which VS Code routes to the Agents window. New session uses `vscode://agents/new?prompt=`.
 - **Client:** the official .NET client, [`Microsoft.VisualStudioCode.AgentHostProtocol`](https://www.nuget.org/packages/Microsoft.VisualStudioCode.AgentHostProtocol).
@@ -33,6 +33,10 @@ Research notes and decisions live in [robertohuertasm/agent-skills, `labs/projec
 - `package/metadata/LoupedeckPackage.yaml`: plugin manifest and the only version number.
 - `probes/`: throwaway research probes.
 
+## Windows (untested)
+
+The code handles Windows paths, VS Code's named pipe endpoint, and opening links through the shell, but nobody has run it there yet. To try it: install the .NET 10 SDK, Logi Options+, and VS Code 1.144 or later, then run `dotnet build src/AgentsWindowPlugin` and check the log. Please report what works.
+
 ## Development
 
 Requires the .NET 10 SDK, Logi Options+ with Logi Plugin Service 6.4 or later, and VS Code 1.144 or later.
@@ -43,7 +47,7 @@ dotnet build src/AgentsWindowPlugin       # Debug: links build/Debug into the Pl
 dotnet clean src/AgentsWindowPlugin       # removes the link
 ```
 
-The log is at `~/Library/Application Support/Logi/LogiPluginService/Logs/plugin_logs/AgentsWindow.log`. A warning that the service "Cannot create dynamic action" for `RecentSessionCommand` is expected: the plugin adds those actions itself.
+The log is at `~/Library/Application Support/Logi/LogiPluginService/Logs/plugin_logs/AgentsWindow.log` on macOS and `%LOCALAPPDATA%\Logi\LogiPluginService\Logs\plugin_logs\AgentsWindow.log` on Windows. A warning that the service "Cannot create dynamic action" for `RecentSessionCommand` is expected: the plugin adds those actions itself.
 
 ## Probes
 

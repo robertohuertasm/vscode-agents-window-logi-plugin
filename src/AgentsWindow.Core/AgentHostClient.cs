@@ -1,3 +1,4 @@
+using System.IO.Pipes;
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text.Json;
@@ -147,20 +148,7 @@ public sealed class AgentHostClient(string entriesDirectory) : ISessionSource, I
     {
         var handler = new SocketsHttpHandler
         {
-            ConnectCallback = async (_, ct) =>
-            {
-                var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-                try
-                {
-                    await socket.ConnectAsync(new UnixDomainSocketEndPoint(endpoint.SocketPath), ct);
-                    return new NetworkStream(socket, ownsSocket: true);
-                }
-                catch
-                {
-                    socket.Dispose();
-                    throw;
-                }
-            },
+            ConnectCallback = (_, ct) => OpenStreamAsync(endpoint.SocketPath, ct),
         };
         var ws = new ClientWebSocket();
         await ws.ConnectAsync(new Uri($"ws://localhost/?tkn={Uri.EscapeDataString(endpoint.Token)}"), new HttpMessageInvoker(handler), cancel);
@@ -174,6 +162,36 @@ public sealed class AgentHostClient(string entriesDirectory) : ISessionSource, I
         catch
         {
             await ahp.DisposeAsync();
+            throw;
+        }
+    }
+
+    private static async ValueTask<Stream> OpenStreamAsync(string path, CancellationToken cancel)
+    {
+        if (EndpointRegistry.PipeName(path) is { } pipe)
+        {
+            var client = new NamedPipeClientStream(".", pipe, PipeDirection.InOut, PipeOptions.Asynchronous);
+            try
+            {
+                await client.ConnectAsync(cancel);
+                return client;
+            }
+            catch
+            {
+                await client.DisposeAsync();
+                throw;
+            }
+        }
+
+        var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        try
+        {
+            await socket.ConnectAsync(new UnixDomainSocketEndPoint(path), cancel);
+            return new NetworkStream(socket, ownsSocket: true);
+        }
+        catch
+        {
+            socket.Dispose();
             throw;
         }
     }

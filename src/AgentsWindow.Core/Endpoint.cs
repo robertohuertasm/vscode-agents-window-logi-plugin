@@ -9,9 +9,22 @@ public sealed record Endpoint(string Type, int Pid, string SocketPath, string To
 // Format: src/vs/platform/agentHost/LOCAL_ENDPOINT.md. Every entry is untrusted input.
 public static class EndpointRegistry
 {
-    public static string DefaultEntriesDirectory(string product = "Code") =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            "Library", "Application Support", product, "agent-host", "local-endpoint", "entries");
+    // VS Code's user data directory: ~/Library/Application Support/<product> on macOS,
+    // %APPDATA%\<product> on Windows.
+    public static string DefaultEntriesDirectory(string product = "Code")
+    {
+        var userData = OperatingSystem.IsWindows()
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), product)
+            : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Library", "Application Support", product);
+        return Path.Combine(userData, "agent-host", "local-endpoint", "entries");
+    }
+
+    // VS Code publishes a Unix socket on macOS and a named pipe (\\.\pipe\<name>) on Windows.
+    public static string? PipeName(string endpointPath)
+    {
+        const string prefix = @"\\.\pipe\";
+        return endpointPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? endpointPath[prefix.Length..] : null;
+    }
 
     // Prefers the editor's own host over a standalone CLI host.
     public static Endpoint? FindLive(string entriesDirectory, Func<int, bool>? isAlive = null)
