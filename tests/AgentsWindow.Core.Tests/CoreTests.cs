@@ -171,3 +171,26 @@ public class KeyFaceTests
     [Fact]
     public void BlankForEmpty() => Assert.Equal(KeyFace.Blank, KeyFace.Label("  "));
 }
+
+public class ChatUrisTests
+{
+    private static readonly Guid Id = Guid.Parse("2d523c65-e8e3-409f-8671-e098a2b1d71e");
+
+    [Fact]
+    public void OpaqueWhenDefaultChatIsOpaque() =>
+        Assert.Equal("ahp-chat:/2d523c65-e8e3-409f-8671-e098a2b1d71e",
+            ChatUris.MintPeer("ahp-session:/s", "ahp-chat:/11111111-1111-1111-1111-111111111111", Id));
+
+    [Fact]
+    public void ShapedWhenDefaultChatIsShaped() =>
+        Assert.Equal("ahp-chat://2d523c65-e8e3-409f-8671-e098a2b1d71e/YWhwLXNlc3Npb246L3M",
+            ChatUris.MintPeer("ahp-session:/s", "ahp-chat://default/YWhwLXNlc3Npb246L3M", Id));
+
+    [Fact]
+    public void ShapedWhenNoDefaultChat() =>
+        Assert.StartsWith("ahp-chat://", ChatUris.MintPeer("copilotcli:/x", null, Id));
+
+    [Fact]
+    public void MintedChatIdRoundTrips() =>
+        Assert.Equal(Id.ToString(), Links.ChatId(ChatUris.MintPeer("ahp-session:/s", "ahp-chat:/11111111-1111-1111-1111-111111111111", Id), null));
+}

@@ -23,6 +23,8 @@ public class AgentsWindowPlugin : Plugin
 
     public SessionBoard Board { get; }
 
+    public ISessionActions Actions => this.client ?? throw new InvalidOperationException("plugin unloaded");
+
     public override void Load()
     {
         for (var slot = 1; slot <= RecentSessionCommand.SlotCount; slot++)

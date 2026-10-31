@@ -10,15 +10,101 @@ public interface ISessionSource
     Task<IReadOnlyList<Session>> ListSessionsAsync(CancellationToken cancel);
 }
 
+public interface ISessionActions
+{
+    Task SetSessionArchivedAsync(string sessionResource, bool archived, CancellationToken cancel);
+
+    Task SetChatArchivedAsync(string chatResource, bool archived, CancellationToken cancel);
+
+    // Creates an empty chat in the session and returns its resource.
+    Task<string> CreateChatAsync(string sessionResource, string? defaultChat, CancellationToken cancel);
+}
+
 // Keeps one AHP connection to the local Agent Host and reconnects when it drops or the
 // host changes (VS Code restart). Never logs or stores the connection token.
-public sealed class AgentHostClient(string entriesDirectory) : ISessionSource, IAsyncDisposable
+public sealed class AgentHostClient(string entriesDirectory) : ISessionSource, ISessionActions, IAsyncDisposable
 {
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
     private AhpClient? client;
     private Endpoint? endpoint;
 
+    private readonly SemaphoreSlim gate = new(1, 1);
+
     public async Task<IReadOnlyList<Session>> ListSessionsAsync(CancellationToken cancel)
+    {
+        await gate.WaitAsync(cancel);
+        try
+        {
+            return await ListLockedAsync(cancel);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    // Archive actions go to the session's or chat's own channel, as the Agents window sends them.
+    // The host only reduces actions on channels the client has subscribed to, so each
+    // dispatch subscribes to the target channel for its duration.
+    public Task SetSessionArchivedAsync(string sessionResource, bool archived, CancellationToken cancel) =>
+        DispatchSubscribedAsync(sessionResource, new SessionIsArchivedChangedAction { IsArchived = archived }, cancel);
+
+    public Task SetChatArchivedAsync(string chatResource, bool archived, CancellationToken cancel) =>
+        DispatchSubscribedAsync(chatResource, new ChatIsArchivedChangedAction { IsArchived = archived }, cancel);
+
+    private Task DispatchSubscribedAsync(string channel, object action, CancellationToken cancel) =>
+        WithClientAsync(async c =>
+        {
+            await c.SubscribeAsync(channel, cancellationToken: cancel);
+            try
+            {
+                return await c.DispatchAsync(channel, new StateAction(action), cancellationToken: cancel);
+            }
+            finally
+            {
+                await c.UnsubscribeAsync(channel, CancellationToken.None);
+            }
+        }, cancel);
+
+    public async Task<string> CreateChatAsync(string sessionResource, string? defaultChat, CancellationToken cancel)
+    {
+        // The host only creates chats in sessions it has loaded, which subscribing does.
+        var chat = ChatUris.MintPeer(sessionResource, defaultChat);
+        await WithClientAsync(async c =>
+        {
+            await c.SubscribeAsync(sessionResource, cancellationToken: cancel);
+            try
+            {
+                return await c.RequestAsync<CreateChatParams, JsonElement>("createChat",
+                    new CreateChatParams { Channel = sessionResource, Chat = chat }, cancel);
+            }
+            finally
+            {
+                await c.UnsubscribeAsync(sessionResource, CancellationToken.None);
+            }
+        }, cancel);
+        return chat;
+    }
+
+    private async Task WithClientAsync<T>(Func<AhpClient, Task<T>> action, CancellationToken cancel)
+    {
+        await gate.WaitAsync(cancel);
+        try
+        {
+            await action(await EnsureConnectedAsync(cancel));
+        }
+        catch
+        {
+            await DisconnectAsync();
+            throw;
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
+
+    private async Task<AhpClient> EnsureConnectedAsync(CancellationToken cancel)
     {
         var current = EndpointRegistry.FindLive(entriesDirectory)
             ?? throw new InvalidOperationException("VS Code's Agent Host is not running");
@@ -28,7 +114,12 @@ public sealed class AgentHostClient(string entriesDirectory) : ISessionSource, I
             client = await ConnectAsync(current, cancel);
             endpoint = current;
         }
+        return client;
+    }
 
+    private async Task<IReadOnlyList<Session>> ListLockedAsync(CancellationToken cancel)
+    {
+        var client = await EnsureConnectedAsync(cancel);
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancel);

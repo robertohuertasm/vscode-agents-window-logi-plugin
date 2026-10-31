@@ -21,7 +21,8 @@ public sealed record Session(
     KeyState State,
     bool Archived,
     DateTimeOffset ModifiedAt,
-    IReadOnlyList<Chat> Chats);
+    IReadOnlyList<Chat> Chats,
+    string? DefaultChat = null);
 
 public static class Status
 {

@@ -2,21 +2,25 @@ namespace Loupedeck.AgentsWindowPlugin;
 
 using AgentsWindow;
 
-// A Dynamic Folder with two levels, like Logitech's Home Assistant plugin:
-// sessions, then the chats of one session. The host always draws its own back key
-// (top left), which closes the folder, so the sessions level adds none. The chats
-// level adds a Back key that returns to the sessions, then one key per chat; the main
-// chat's key opens the session itself.
-// A short press on a session opens it. A long press on a session with several chats
-// (badged with the count) enters its chat level.
+// A Dynamic Folder with two levels, like Logitech's Home Assistant plugin.
+//
+// Sessions level: the host's own back key (top left, closes the folder), New, then one
+// key per session. A short press opens the session; a long press opens its menu.
+//
+// Session menu: Back (to sessions), New chat, Archive, then the session's chats. A press
+// on a chat opens it; a long press archives it. Archive actions ask for a second press
+// within a few seconds, because the Keypad has no undo and the key vanishes at once.
 public sealed class SessionsFolder : PluginDynamicFolder
 {
     private const string Back = "back";
     private const string New = "new";
+    private const string NewChat = "newchat";
+    private const string Archive = "archive";
     private const string SessionPrefix = "s:";
     private const string ChatPrefix = "c:";
+    private static readonly TimeSpan ConfirmWindow = TimeSpan.FromSeconds(3);
 
-    // Folder key names carry the state ("s:Working|<resource>"), so a state change renames
+    // Folder key names carry the state ("s:Working2|<resource>"), so a state change renames
     // the key and the host fetches a fresh face instead of reusing a cached one.
     private const char StateSeparator = '|';
 
@@ -27,6 +31,10 @@ public sealed class SessionsFolder : PluginDynamicFolder
     private bool longPressHandled;
     private string[] shownNames = [];
 
+    // The key waiting for a confirming press (Archive, or a chat after a long press).
+    private string? armed;
+    private CancellationTokenSource? armTimer;
+
     public SessionsFolder()
     {
         this.DisplayName = "Agents window";
@@ -34,7 +42,9 @@ public sealed class SessionsFolder : PluginDynamicFolder
         this.GroupName = "Agents window";
     }
 
-    private SessionBoard Board => ((AgentsWindowPlugin)this.Plugin).Board;
+    private AgentsWindowPlugin Owner => (AgentsWindowPlugin)this.Plugin;
+
+    private SessionBoard Board => this.Owner.Board;
 
     public override bool Load()
     {
@@ -50,17 +60,15 @@ public sealed class SessionsFolder : PluginDynamicFolder
 
     // The host's own back key closes the folder without telling RunCommand, so the
     // level is reset whenever the folder opens or closes. Otherwise it reopens on the
-    // chats of the last session.
+    // menu of the last session.
     public override bool Activate()
     {
-        this.Plugin.Log.Info("folder activated");
         this.ResetLevel();
         return true;
     }
 
     public override bool Deactivate()
     {
-        this.Plugin.Log.Info("folder deactivated");
         this.ResetLevel();
         return true;
     }
@@ -80,6 +88,8 @@ public sealed class SessionsFolder : PluginDynamicFolder
         if (this.openSession is { } resource && this.Board.Find(resource) is { } session)
         {
             yield return this.CreateCommandName(Back);
+            yield return this.CreateCommandName(NewChat);
+            yield return this.CreateCommandName(Archive);
             foreach (var chat in session.Chats)
             {
                 yield return this.CreateCommandName($"{ChatPrefix}{chat.State}{StateSeparator}{chat.Resource}");
@@ -96,12 +106,14 @@ public sealed class SessionsFolder : PluginDynamicFolder
 
     public override string GetCommandDisplayName(string actionParameter, PluginImageSize imageSize)
     {
+        if (this.armed == actionParameter) return "Sure?";
         if (actionParameter == Back) return "Back";
         if (actionParameter == New) return "New";
+        if (actionParameter == NewChat) return "New chat";
+        if (actionParameter == Archive) return "Archive";
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
-            var s = this.Board.Find(Resource(actionParameter, SessionPrefix));
-            return KeyFace.Label(s?.Title);
+            return KeyFace.Label(this.Board.Find(Resource(actionParameter, SessionPrefix))?.Title);
         }
         if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal))
         {
@@ -112,8 +124,10 @@ public sealed class SessionsFolder : PluginDynamicFolder
 
     public override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize)
     {
+        if (this.armed == actionParameter) return Faces.Glyph("?", imageSize, new BitmapColor(200, 30, 30));
         if (actionParameter == Back) return Faces.Glyph("‹", imageSize);
-        if (actionParameter == New) return Faces.Glyph("+", imageSize);
+        if (actionParameter == New || actionParameter == NewChat) return Faces.Glyph("+", imageSize);
+        if (actionParameter == Archive) return Faces.Glyph("✓", imageSize);
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
             var session = this.Board.Find(Resource(actionParameter, SessionPrefix));
@@ -126,12 +140,14 @@ public sealed class SessionsFolder : PluginDynamicFolder
         return Faces.Ring(KeyState.None, imageSize);
     }
 
-    // Session keys handle their own events so a hold can open the session instead of
-    // entering its chats: a short press acts on Release, a long press on LongPress.
+    // Session and chat keys handle their own events so a hold can do something other
+    // than a tap: a short press acts on Release, a long press on LongPress.
     // Other keys keep the default handling, which calls RunCommand.
     public override bool ProcessButtonEvent2(string actionParameter, DeviceButtonEvent2 buttonEvent)
     {
-        if (!actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
+        var isSession = actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal);
+        var isChat = actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal);
+        if (!isSession && !isChat)
         {
             return base.ProcessButtonEvent2(actionParameter, buttonEvent);
         }
@@ -143,14 +159,21 @@ public sealed class SessionsFolder : PluginDynamicFolder
                 return true;
             case DeviceButtonEventType.LongPress:
                 this.longPressHandled = true;
-                this.LongPressSession(Resource(actionParameter, SessionPrefix));
+                if (isSession)
+                {
+                    this.OpenMenu(Resource(actionParameter, SessionPrefix));
+                }
+                else
+                {
+                    this.Arm(actionParameter);
+                }
                 return true;
             case DeviceButtonEventType.RepeatPress:
                 return true;
             case DeviceButtonEventType.Release:
                 if (!this.longPressHandled)
                 {
-                    this.PressSession(Resource(actionParameter, SessionPrefix));
+                    this.Tap(actionParameter);
                 }
                 this.longPressHandled = false;
                 return true;
@@ -159,44 +182,135 @@ public sealed class SessionsFolder : PluginDynamicFolder
         }
     }
 
-    public override void RunCommand(string actionParameter)
+    public override void RunCommand(string actionParameter) => this.Tap(actionParameter);
+
+    private void Tap(string actionParameter)
     {
+        if (this.armed is not null && this.armed != actionParameter)
+        {
+            this.Disarm();
+        }
+
         if (actionParameter == Back)
         {
-            this.openSession = null;
-            this.shownNames = [];
-            this.ButtonActionNamesChanged();
+            this.ResetLevel(force: true);
         }
         else if (actionParameter == New)
         {
             Opener.Open(Links.NewSession(" "));
         }
+        else if (actionParameter == NewChat && this.openSession is { } session)
+        {
+            _ = this.CreateChatAsync(session);
+        }
+        else if (actionParameter == Archive && this.openSession is { } toArchive)
+        {
+            if (this.armed == Archive)
+            {
+                this.Disarm();
+                _ = this.ArchiveSessionAsync(toArchive);
+            }
+            else
+            {
+                this.Arm(Archive);
+            }
+        }
         else if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
-            this.PressSession(Resource(actionParameter, SessionPrefix));
+            Opener.Open(Links.OpenSession(Resource(actionParameter, SessionPrefix)));
         }
         else if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal) && this.FindChat(Resource(actionParameter, ChatPrefix)) is { } found)
         {
-            Opener.Open(Links.OpenSession(found.Session.Resource, found.Chat.ChatId));
+            if (this.armed == actionParameter)
+            {
+                this.Disarm();
+                _ = this.ArchiveChatAsync(found.Session, found.Chat);
+            }
+            else
+            {
+                Opener.Open(Links.OpenSession(found.Session.Resource, found.Chat.ChatId));
+            }
         }
     }
 
-    // A short press always opens the session.
-    private void PressSession(string resource) => Opener.Open(Links.OpenSession(resource));
-
-    // A long press enters the chats of a session that has several; otherwise it opens it.
-    private void LongPressSession(string resource)
+    private void OpenMenu(string resource)
     {
-        if (this.Board.Find(resource) is { Chats.Count: > 1 })
+        this.Disarm();
+        this.openSession = resource;
+        this.shownNames = [];
+        this.ButtonActionNamesChanged();
+    }
+
+    private async Task CreateChatAsync(string sessionResource)
+    {
+        try
         {
-            this.Plugin.Log.Info("long press: showing the session's chats");
-            this.openSession = resource;
-            this.shownNames = [];
-            this.ButtonActionNamesChanged();
+            var session = this.Board.Find(sessionResource);
+            var chat = await this.Owner.Actions.CreateChatAsync(sessionResource, session?.DefaultChat, CancellationToken.None);
+            this.Plugin.Log.Info("created a chat from the Keypad");
+            Opener.Open(Links.OpenSession(sessionResource, Links.ChatId(chat, session?.DefaultChat)));
         }
-        else
+        catch (Exception e)
         {
-            Opener.Open(Links.OpenSession(resource));
+            this.Plugin.Log.Error($"could not create a chat: {e.Message}");
+        }
+    }
+
+    // Archiving the session's default chat archives the session, as the protocol advises.
+    private async Task ArchiveChatAsync(Session session, Chat chat)
+    {
+        if (chat.ChatId is null)
+        {
+            await this.ArchiveSessionAsync(session.Resource);
+            return;
+        }
+
+        try
+        {
+            await this.Owner.Actions.SetChatArchivedAsync(chat.Resource, true, CancellationToken.None);
+            this.Plugin.Log.Info("archived a chat from the Keypad");
+        }
+        catch (Exception e)
+        {
+            this.Plugin.Log.Error($"could not archive a chat: {e.Message}");
+        }
+    }
+
+    private async Task ArchiveSessionAsync(string sessionResource)
+    {
+        try
+        {
+            await this.Owner.Actions.SetSessionArchivedAsync(sessionResource, true, CancellationToken.None);
+            this.Plugin.Log.Info("archived a session from the Keypad");
+            this.ResetLevel(force: true);
+        }
+        catch (Exception e)
+        {
+            this.Plugin.Log.Error($"could not archive a session: {e.Message}");
+        }
+    }
+
+    private void Arm(string actionParameter)
+    {
+        this.armTimer?.Cancel();
+        var previous = this.armed;
+        this.armed = actionParameter;
+        var timer = this.armTimer = new CancellationTokenSource();
+        if (previous is not null) this.CommandImageChanged(this.CreateCommandName(previous));
+        this.CommandImageChanged(this.CreateCommandName(actionParameter));
+        _ = Task.Delay(ConfirmWindow, timer.Token).ContinueWith(
+            _ => { if (this.armed == actionParameter) this.Disarm(); },
+            CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+    }
+
+    private void Disarm()
+    {
+        this.armTimer?.Cancel();
+        this.armTimer = null;
+        if (this.armed is { } key)
+        {
+            this.armed = null;
+            this.CommandImageChanged(this.CreateCommandName(key));
         }
     }
 
@@ -207,9 +321,10 @@ public sealed class SessionsFolder : PluginDynamicFolder
         return separator < 0 ? rest : rest[(separator + 1)..];
     }
 
-    private void ResetLevel()
+    private void ResetLevel(bool force = false)
     {
-        if (this.openSession is null) return;
+        this.Disarm();
+        if (this.openSession is null && !force) return;
         this.openSession = null;
         this.shownNames = [];
         try
@@ -233,8 +348,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
 
     private void OnBoardChanged()
     {
-        // The host caches the folder key's face and only re-reads it when asked, so without
-        // this it keeps whatever state it drew last (for example amber after a page change).
+        // The host caches the folder key's face and only re-reads it when asked.
         try
         {
             this.Plugin.OnActionImageChanged(FolderActionName, this.Name, true);
@@ -244,9 +358,15 @@ public sealed class SessionsFolder : PluginDynamicFolder
             this.Plugin.Log.Error(e, "could not redraw the Agents window folder key");
         }
 
-        // ButtonActionNamesChanged alone does not redraw keys whose names stay the same,
-        // and a session key's name is fixed while its state changes, so each key is
-        // invalidated too.
+        // A session archived elsewhere closes its menu.
+        if (this.openSession is { } open && this.Board.Find(open) is null)
+        {
+            this.ResetLevel();
+            return;
+        }
+
+        // ButtonActionNamesChanged alone does not redraw keys whose names stay the same, so
+        // each visible key is invalidated too.
         try
         {
             var names = this.GetButtonPressActionNames(DeviceType.All).ToArray();

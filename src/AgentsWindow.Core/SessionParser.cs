@@ -28,7 +28,7 @@ public static class SessionParser
             }
         }
 
-        return new Session(resource, Str(item, "title") ?? "", project, Status.ToKeyState(status), Status.IsArchivedFlag(status), modified, chats);
+        return new Session(resource, Str(item, "title") ?? "", project, Status.ToKeyState(status), Status.IsArchivedFlag(status), modified, chats, defaultChat);
     }
 
     public static IReadOnlyList<Session> ParseList(JsonElement result)

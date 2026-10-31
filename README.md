@@ -12,13 +12,14 @@ Drag these onto keys in Logi Options+ (group **VS Code Agents Window**):
 |---|---|
 | **Recent session 1…9** | The Nth non-archived session: waiting for input first, then error, then working, then most recently modified. Press opens it in the Agents window. |
 | **New session** | Opens the Agents window on the new-session composer. |
-| **Agents window** (folder) | Opens a folder with **New** and one key per session, after the back key the Plugin Service always draws top left. A press opens a session. A session with several chats shows a white badge with the count; a long press on it shows its chats, with a **Back** key to the sessions. The host's back key closes the folder from either level. |
+| **Agents window** (folder) | Opens a folder with **New** and one key per session, after the back key the Plugin Service always draws top left. A press opens a session. A long press opens the session's menu: **Back**, **New chat** (creates a chat in that session and opens it), **Archive** (the whole session), and one key per chat. In the menu, a press opens a chat and a long press archives it. Archiving asks for a second press within 3 seconds (the key turns red with "Sure?"). Sessions with several chats show a white badge with the count. |
 
 Key colors: red waiting for input, purple error, amber working, green outline idle, grey dotted empty, dark red dotted VS Code not reachable.
 
 ## How it works
 
 - **State:** VS Code's local Agent Host publishes an [Agent Host Protocol](https://microsoft.github.io/agent-host-protocol/) endpoint for other local processes. The plugin finds it through `~/Library/Application Support/Code/agent-host/local-endpoint/entries/*.json`, connects over the Unix socket with the entry's token, and polls `listSessions` once a second. The token is never logged.
+- **Actions:** archiving dispatches `session/isArchivedChanged` or `chat/isArchivedChanged`, and New chat sends `createChat`, each after subscribing to the target channel (the host only acts on loaded channels).
 - **Focus:** a press opens `vscode://agents/agent-host-session/<provider>/<sessionId>[/chat/<chatId>]`, which VS Code routes to the Agents window. New session uses `vscode://agents/new?prompt=`.
 - **Client:** the official .NET client, [`Microsoft.VisualStudioCode.AgentHostProtocol`](https://www.nuget.org/packages/Microsoft.VisualStudioCode.AgentHostProtocol).
 
