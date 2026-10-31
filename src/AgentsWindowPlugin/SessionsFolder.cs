@@ -16,8 +16,12 @@ public sealed class SessionsFolder : PluginDynamicFolder
     private const string ChatPrefix = "c:";
     private const string OpenSessionPrefix = "o:";
 
+    // How a profile addresses this folder's own key; PluginDynamicFolder has no ButtonImageChanged.
+    private const string FolderActionName = "#DynamicFolder";
+
     private string? openSession;
     private bool longPressHandled;
+    private string[] shownNames = [];
 
     public SessionsFolder()
     {
@@ -138,6 +142,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
         if (actionParameter == Back)
         {
             this.openSession = null;
+            this.shownNames = [];
             this.ButtonActionNamesChanged();
         }
         else if (actionParameter == New)
@@ -154,6 +159,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
             if (this.Board.Find(resource) is { Chats.Count: > 1 })
             {
                 this.openSession = resource;
+                this.shownNames = [];
                 this.ButtonActionNamesChanged();
             }
             else
@@ -178,9 +184,32 @@ public sealed class SessionsFolder : PluginDynamicFolder
 
     private void OnBoardChanged()
     {
+        // The host caches the folder key's face and only re-reads it when asked, so without
+        // this it keeps whatever state it drew last (for example amber after a page change).
         try
         {
-            this.ButtonActionNamesChanged();
+            this.Plugin.OnActionImageChanged(FolderActionName, this.Name, true);
+        }
+        catch (Exception e)
+        {
+            this.Plugin.Log.Error(e, "could not redraw the Agents window folder key");
+        }
+
+        // ButtonActionNamesChanged alone does not redraw keys whose names stay the same,
+        // and a session key's name is fixed while its state changes, so each key is
+        // invalidated too.
+        try
+        {
+            var names = this.GetButtonPressActionNames(DeviceType.All).ToArray();
+            if (!names.SequenceEqual(this.shownNames))
+            {
+                this.shownNames = names;
+                this.ButtonActionNamesChanged();
+            }
+            foreach (var name in names)
+            {
+                this.CommandImageChanged(name);
+            }
         }
         catch (Exception e)
         {
