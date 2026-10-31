@@ -3,7 +3,9 @@ namespace Loupedeck.AgentsWindowPlugin;
 using AgentsWindow;
 
 // A Dynamic Folder with two levels, like Logitech's Home Assistant plugin:
-// sessions, then the chats of one session. Back goes up a level or closes the folder.
+// sessions, then the chats of one session. The host always draws its own back key
+// (top left), which closes the folder, so the sessions level adds none. The chats
+// level adds a Back key that returns to the sessions.
 // Pressing a session with one chat opens it; with several chats it enters the chat level.
 // A long press on a session always opens it (experimental: the Keypad may not send LongPress).
 public sealed class SessionsFolder : PluginDynamicFolder
@@ -56,9 +58,9 @@ public sealed class SessionsFolder : PluginDynamicFolder
 
     public override IEnumerable<string> GetButtonPressActionNames(DeviceType deviceType)
     {
-        yield return this.CreateCommandName(Back);
         if (this.openSession is { } resource && this.Board.Find(resource) is { } session)
         {
+            yield return this.CreateCommandName(Back);
             yield return this.CreateCommandName(OpenSessionPrefix + session.Resource);
             foreach (var chat in session.Chats)
             {
@@ -135,15 +137,8 @@ public sealed class SessionsFolder : PluginDynamicFolder
 
         if (actionParameter == Back)
         {
-            if (this.openSession is null)
-            {
-                this.Close();
-            }
-            else
-            {
-                this.openSession = null;
-                this.ButtonActionNamesChanged();
-            }
+            this.openSession = null;
+            this.ButtonActionNamesChanged();
         }
         else if (actionParameter == New)
         {
