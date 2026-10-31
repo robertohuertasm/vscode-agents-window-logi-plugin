@@ -10,7 +10,7 @@ Drag these onto keys in Logi Options+ (group **VS Code Agents Window**):
 
 | Action | What it does |
 |---|---|
-| **Recent session 1…9** | The Nth non-archived session: waiting for input first, then error, then working, then most recently modified. Press opens it in the Agents window. |
+| **Recent chat 1…9** | The Nth chat across all non-archived sessions, so a session with several active chats takes several keys: waiting for input first, then error, then working, then idle, in session order. Press opens that chat. A long press asks **Archive?** and a press within 3 seconds archives it; the main chat archives its whole session. Keys placed as "Recent session" in 0.1.0 keep working. |
 | **New session** | Opens the Agents window on the new-session composer. |
 | **Agents window** (folder) | Opens a folder with **New** and one key per session, after the back key the Plugin Service always draws top left. A press opens a session. A long press opens the session's menu: **Back**, **New chat** (creates a chat in that session and opens it), **Archive** (the whole session), and one key per chat. In the menu, a press opens a chat and a long press archives it. VS Code refuses to archive side chats (started from another chat) and the main chat on their own, so a long press just opens those. Archiving asks for a second press within 3 seconds (the key turns red with "Archive?"). Sessions with several chats show a white badge with the count. |
 
@@ -47,7 +47,7 @@ dotnet build src/AgentsWindowPlugin       # Debug: links build/Debug into the Pl
 dotnet clean src/AgentsWindowPlugin       # removes the link
 ```
 
-The log is at `~/Library/Application Support/Logi/LogiPluginService/Logs/plugin_logs/AgentsWindow.log` on macOS and `%LOCALAPPDATA%\Logi\LogiPluginService\Logs\plugin_logs\AgentsWindow.log` on Windows. A warning that the service "Cannot create dynamic action" for `RecentSessionCommand` is expected: the plugin adds those actions itself.
+The log is at `~/Library/Application Support/Logi/LogiPluginService/Logs/plugin_logs/AgentsWindow.log` on macOS and `%LOCALAPPDATA%\Logi\LogiPluginService\Logs\plugin_logs\AgentsWindow.log` on Windows. A warning that the service "Cannot create dynamic action" for `RecentChatCommand` is expected: the plugin adds those actions itself.
 
 ## Probes
 

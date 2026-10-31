@@ -10,11 +10,17 @@ public sealed class SessionBoard(ISessionSource source)
 
     public IReadOnlyList<Session> Ranked { get; private set; } = [];
 
+    public IReadOnlyList<RankedChat> RankedChats { get; private set; } = [];
+
     public bool Online { get; private set; }
 
     public event Action? Changed;
 
     public Session? At(int index) => index >= 0 && index < Ranked.Count ? Ranked[index] : null;
+
+    public RankedChat? ChatAt(int index) => index >= 0 && index < RankedChats.Count ? RankedChats[index] : null;
+
+    public RankedChat? FindChat(string chatResource) => RankedChats.FirstOrDefault(c => c.Chat.Resource == chatResource);
 
     public Session? Find(string resource) => Ranked.FirstOrDefault(s => s.Resource == resource);
 
@@ -26,6 +32,7 @@ public sealed class SessionBoard(ISessionSource source)
         if (sessions is not null) this.LogTransitions(ranked);
         var next = Signature(ranked, online);
         Ranked = ranked;
+        RankedChats = Ranking.RankChats(ranked);
         Online = online;
         if (next == signature) return false;
         signature = next;

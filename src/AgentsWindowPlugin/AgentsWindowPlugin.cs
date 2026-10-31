@@ -5,7 +5,7 @@ using AgentsWindow;
 public class AgentsWindowPlugin : Plugin
 {
     private readonly CancellationTokenSource stop = new();
-    private readonly List<RecentSessionCommand> recent = [];
+    private readonly List<RecentChatCommand> recent = [];
     private AgentHostClient? client;
 
     public AgentsWindowPlugin()
@@ -27,16 +27,16 @@ public class AgentsWindowPlugin : Plugin
 
     public override void Load()
     {
-        for (var slot = 1; slot <= RecentSessionCommand.SlotCount; slot++)
+        for (var slot = 1; slot <= RecentChatCommand.SlotCount; slot++)
         {
-            var command = new RecentSessionCommand(this.Board, slot);
+            var command = new RecentChatCommand(this, slot);
             this.recent.Add(command);
             this.AddDynamicAction(command);
         }
         this.AddDynamicAction(new NewSessionCommand());
         this.Board.Changed += this.RedrawRecent;
         _ = Task.Run(() => this.Board.RunAsync(this.stop.Token));
-        AgentsWindow.Log.Info($"{this.recent.Count} recent-session keys registered");
+        AgentsWindow.Log.Info($"{this.recent.Count} recent-chat keys registered");
     }
 
     public override void Unload()
