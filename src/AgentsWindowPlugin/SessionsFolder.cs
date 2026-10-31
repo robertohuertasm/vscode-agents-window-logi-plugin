@@ -5,7 +5,8 @@ using AgentsWindow;
 // A Dynamic Folder with two levels, like Logitech's Home Assistant plugin:
 // sessions, then the chats of one session. The host always draws its own back key
 // (top left), which closes the folder, so the sessions level adds none. The chats
-// level adds a Back key that returns to the sessions.
+// level adds a Back key that returns to the sessions, then one key per chat; the main
+// chat's key opens the session itself.
 // Pressing a session with one chat opens it; with several chats it enters the chat level.
 // A long press on a session always opens it (experimental: the Keypad may not send LongPress).
 public sealed class SessionsFolder : PluginDynamicFolder
@@ -14,7 +15,6 @@ public sealed class SessionsFolder : PluginDynamicFolder
     private const string New = "new";
     private const string SessionPrefix = "s:";
     private const string ChatPrefix = "c:";
-    private const string OpenSessionPrefix = "o:";
 
     // How a profile addresses this folder's own key; PluginDynamicFolder has no ButtonImageChanged.
     private const string FolderActionName = "#DynamicFolder";
@@ -65,7 +65,6 @@ public sealed class SessionsFolder : PluginDynamicFolder
         if (this.openSession is { } resource && this.Board.Find(resource) is { } session)
         {
             yield return this.CreateCommandName(Back);
-            yield return this.CreateCommandName(OpenSessionPrefix + session.Resource);
             foreach (var chat in session.Chats)
             {
                 yield return this.CreateCommandName(ChatPrefix + chat.Resource);
@@ -84,10 +83,6 @@ public sealed class SessionsFolder : PluginDynamicFolder
     {
         if (actionParameter == Back) return "Back";
         if (actionParameter == New) return "New";
-        if (actionParameter.StartsWith(OpenSessionPrefix, StringComparison.Ordinal))
-        {
-            return KeyFace.Label(this.Board.Find(actionParameter[OpenSessionPrefix.Length..])?.Title);
-        }
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
             var s = this.Board.Find(actionParameter[SessionPrefix.Length..]);
@@ -104,10 +99,6 @@ public sealed class SessionsFolder : PluginDynamicFolder
     {
         if (actionParameter == Back) return Faces.Glyph("‹", imageSize);
         if (actionParameter == New) return Faces.Glyph("+", imageSize);
-        if (actionParameter.StartsWith(OpenSessionPrefix, StringComparison.Ordinal))
-        {
-            return Faces.Ring(this.Board.Find(actionParameter[OpenSessionPrefix.Length..])?.State ?? KeyState.None, imageSize);
-        }
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
             return Faces.Ring(this.Board.Find(actionParameter[SessionPrefix.Length..])?.State ?? KeyState.None, imageSize);
@@ -148,10 +139,6 @@ public sealed class SessionsFolder : PluginDynamicFolder
         else if (actionParameter == New)
         {
             Opener.Open(Links.NewSession(" "));
-        }
-        else if (actionParameter.StartsWith(OpenSessionPrefix, StringComparison.Ordinal))
-        {
-            Opener.Open(Links.OpenSession(actionParameter[OpenSessionPrefix.Length..]));
         }
         else if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
