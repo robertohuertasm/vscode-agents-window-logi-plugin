@@ -53,11 +53,11 @@ internal static class Faces
 
     public static BitmapImage NewGlyph(bool online, PluginImageSize size) => Glyph(online ? "+" : "▶", size);
 
-    public static BitmapImage Glyph(string text, PluginImageSize size, BitmapColor? background = null)
+    public static BitmapImage Glyph(string text, PluginImageSize size, BitmapColor? background = null, float fontScale = 0.4f)
     {
         using var b = new BitmapBuilder(size);
         b.Clear(background ?? BitmapColor.Black);
-        b.DrawText(text, 0, 0, b.Width, (int)(b.Height * 0.8), BitmapColor.White, (int)(b.Height * 0.4), 0, 0, null);
+        b.DrawText(text, 0, 0, b.Width, (int)(b.Height * 0.8), BitmapColor.White, (int)(b.Height * fontScale), 0, 0, null);
         return b.ToImage();
     }
 }
