@@ -14,7 +14,7 @@ Drag these onto keys in Logi Options+ (group **VS Code Agents Window**):
 | **New session** | Opens the Agents window on the new-session composer. While VS Code is not running the key reads **Start VS Code** (▶); the same press starts it. |
 | **Agents window** (folder) | Opens a folder with **New** and one key per session, after the back key the Plugin Service always draws top left. A press opens a session. A long press opens the session's menu: **Back**, **New chat** (creates a chat in that session and opens it), **Archive** (the whole session), and one key per chat. In the menu, a press opens a chat and a long press archives it. VS Code refuses to archive side chats (started from another chat) and the main chat on their own, so a long press just opens those. Archiving asks for a second press within 3 seconds (the key turns red with "Archive?"). Sessions with several chats show a white badge with the count. |
 
-Key colors: red waiting for input, purple error, amber working, blue finished but not looked at yet (VS Code's blue dot), green outline idle, grey dotted empty, dark red dotted VS Code not reachable. A session key shows its most urgent chat, so a side chat waiting or unread colors the whole session.
+Key colors: red waiting for input, purple error, amber working, blue finished but not looked at yet (VS Code's blue dot), green outline idle, grey dotted empty, dark red dotted VS Code not reachable. A chat stopped on a resumable error (VS Code's blue Keep Going or Try Again button) shows purple too, even when VS Code reports it as idle. A session key shows its most urgent chat, so a side chat waiting or unread colors the whole session.
 
 ## How it works
 

@@ -221,3 +221,41 @@ public class ChatUrisTests
     public void MintedChatIdRoundTrips() =>
         Assert.Equal(Id.ToString(), Links.ChatId(ChatUris.MintPeer("ahp-session:/s", "ahp-chat:/11111111-1111-1111-1111-111111111111", Id), null));
 }
+
+public class InterruptedTurnsTests
+{
+    private static JsonElement Snapshot(string json) => JsonDocument.Parse(json).RootElement;
+
+    [Fact]
+    public void DetectsResumableErrorAsLastTurn() =>
+        Assert.True(InterruptedTurns.EndsResumable(Snapshot("""
+            {"snapshot":{"state":{"turns":[
+              {"state":"complete","responseParts":[{"kind":"markdown"}]},
+              {"state":"error","responseParts":[{"kind":"toolCall"},{"kind":"error","resumable":true,"error":{"errorType":"executionInterrupted"}}]}]}}}
+            """)));
+
+    [Theory]
+    [InlineData("""{"snapshot":{"state":{"turns":[{"state":"error","responseParts":[{"kind":"error","error":{}}]}]}}}""")]
+    [InlineData("""{"snapshot":{"state":{"turns":[{"state":"error","responseParts":[{"kind":"error","resumable":true}]},{"state":"complete","responseParts":[]}]}}}""")]
+    [InlineData("""{"snapshot":{"state":{"activeTurn":{"id":"t"},"turns":[{"state":"error","responseParts":[{"kind":"error","resumable":true}]}]}}}""")]
+    [InlineData("""{"snapshot":{"state":{"turns":[]}}}""")]
+    [InlineData("""{}""")]
+    public void IgnoresOtherShapes(string json) => Assert.False(InterruptedTurns.EndsResumable(Snapshot(json)));
+
+    [Fact]
+    public void UpgradesStuckIdleChatsAndTheirSession()
+    {
+        var session = new Session("ahp-session:/s", "S", null, KeyState.Idle, false, DateTimeOffset.UnixEpoch,
+            [new Chat("ahp-chat:/a", null, "main", KeyState.Idle), new Chat("ahp-chat:/b", "b", "stuck", KeyState.Idle)]);
+        var result = Assert.Single(InterruptedTurns.Apply([session], new HashSet<string> { "ahp-chat:/b" }));
+        Assert.Equal(KeyState.Error, result.State);
+        Assert.Equal([KeyState.Idle, KeyState.Error], result.Chats.Select(c => c.State));
+    }
+
+    [Fact]
+    public void LeavesSessionsWithoutStuckChatsUntouched()
+    {
+        var session = new Session("ahp-session:/s", "S", null, KeyState.Working, false, DateTimeOffset.UnixEpoch, [new Chat("ahp-chat:/a", null, "main", KeyState.Working)]);
+        Assert.Same(session, Assert.Single(InterruptedTurns.Apply([session], new HashSet<string> { "ahp-chat:/a" })));
+    }
+}

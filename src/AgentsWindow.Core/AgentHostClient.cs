@@ -29,6 +29,9 @@ public sealed class AgentHostClient(string entriesDirectory) : ISessionSource, I
     private AhpClient? client;
     private Endpoint? endpoint;
 
+    // Per chat: the summary fingerprint last checked for an interrupted turn, and the result.
+    private readonly Dictionary<string, (string Fingerprint, bool Stuck)> interrupted = [];
+
     private readonly SemaphoreSlim gate = new(1, 1);
 
     public async Task<IReadOnlyList<Session>> ListSessionsAsync(CancellationToken cancel)
@@ -135,12 +138,62 @@ public sealed class AgentHostClient(string entriesDirectory) : ISessionSource, I
                 cursor = SessionParser.NextCursor(page);
             }
             while (cursor is not null);
-            return sessions;
+            await this.RefreshInterruptedAsync(client, sessions, cancel);
+            var stuck = this.interrupted.Where(e => e.Value.Stuck).Select(e => e.Key).ToHashSet();
+            return InterruptedTurns.Apply(sessions, stuck);
         }
         catch
         {
             await DisconnectAsync();
             throw;
+        }
+    }
+
+    // Checks idle chats of non-archived sessions whose summary changed since the last check.
+    // In steady state nothing changes, so no snapshot is fetched. At most a few chats are
+    // checked per poll, within their own time budget, and a failure never fails the list:
+    // the rest are picked up on later polls.
+    private const int MaxInterruptedChecksPerPoll = 3;
+    private static readonly TimeSpan InterruptedCheckBudget = TimeSpan.FromSeconds(2);
+
+    private async Task RefreshInterruptedAsync(AhpClient client, IReadOnlyList<Session> sessions, CancellationToken cancel)
+    {
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancel);
+        budget.CancelAfter(InterruptedCheckBudget);
+        var checkedThisPoll = 0;
+        var candidates = sessions.Where(s => !s.Archived)
+            .SelectMany(s => s.Chats.Select(c => (Chat: c, Fingerprint: $"{s.ModifiedAt:O}|{c.State}|{c.Title}")))
+            .Where(x => x.Chat.State is KeyState.Idle or KeyState.Unread)
+            .ToList();
+        var live = candidates.Select(x => x.Chat.Resource).ToHashSet();
+        foreach (var gone in this.interrupted.Keys.Where(k => !live.Contains(k)).ToList())
+        {
+            this.interrupted.Remove(gone);
+        }
+
+        foreach (var (chat, fingerprint) in candidates)
+        {
+            if (this.interrupted.TryGetValue(chat.Resource, out var known) && known.Fingerprint == fingerprint) continue;
+            if (checkedThisPoll++ >= MaxInterruptedChecksPerPoll || budget.IsCancellationRequested) return;
+            var stuck = false;
+            try
+            {
+                var snapshot = await client.RequestAsync<SubscribeParams, JsonElement>("subscribe", new SubscribeParams { Channel = chat.Resource }, budget.Token);
+                stuck = InterruptedTurns.EndsResumable(snapshot);
+                await client.RequestAsync<UnsubscribeParams, JsonElement>("unsubscribe", new UnsubscribeParams { Channel = chat.Resource }, budget.Token);
+            }
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception e)
+            {
+                // Retried on a later poll: the fingerprint is not recorded.
+                Log.Warning($"could not check a chat for an interrupted turn: {e.Message}");
+                return;
+            }
+            if (stuck && known.Stuck != stuck) Log.Info("a chat stopped on a resumable error (Keep Going); showing it as error");
+            this.interrupted[chat.Resource] = (fingerprint, stuck);
         }
     }
 
