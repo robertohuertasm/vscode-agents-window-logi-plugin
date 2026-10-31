@@ -6,6 +6,7 @@ public class AgentsWindowPlugin : Plugin
 {
     private readonly CancellationTokenSource stop = new();
     private readonly List<RecentChatCommand> recent = [];
+    private NewSessionCommand? newSession;
     private AgentHostClient? client;
 
     public AgentsWindowPlugin()
@@ -33,7 +34,8 @@ public class AgentsWindowPlugin : Plugin
             this.recent.Add(command);
             this.AddDynamicAction(command);
         }
-        this.AddDynamicAction(new NewSessionCommand());
+        this.newSession = new NewSessionCommand(this.Board);
+        this.AddDynamicAction(this.newSession);
         this.Board.Changed += this.RedrawRecent;
         _ = Task.Run(() => this.Board.RunAsync(this.stop.Token));
         AgentsWindow.Log.Info($"{this.recent.Count} recent-chat keys registered");
@@ -53,5 +55,6 @@ public class AgentsWindowPlugin : Plugin
         {
             command.Redraw();
         }
+        this.newSession?.Redraw();
     }
 }

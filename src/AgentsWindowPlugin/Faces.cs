@@ -47,6 +47,12 @@ internal static class Faces
         return b.ToImage();
     }
 
+    // The New key does the same thing either way: the link also starts VS Code when it is
+    // closed. Only the label changes, so it is clear what a press will do.
+    public static string NewLabel(bool online) => online ? "New" : "Start VS Code";
+
+    public static BitmapImage NewGlyph(bool online, PluginImageSize size) => Glyph(online ? "+" : "▶", size);
+
     public static BitmapImage Glyph(string text, PluginImageSize size, BitmapColor? background = null)
     {
         using var b = new BitmapBuilder(size);

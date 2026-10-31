@@ -103,7 +103,8 @@ public sealed class SessionsFolder : PluginDynamicFolder
             yield break;
         }
 
-        yield return this.CreateCommandName(New);
+        // Renamed when VS Code goes offline so the host redraws it as "Start VS Code".
+        yield return this.CreateCommandName(this.Board.Online ? New : New + "-offline");
         foreach (var s in this.Board.Ranked)
         {
             yield return this.CreateCommandName($"{SessionPrefix}{s.State}{s.Chats.Count}{TitleTag(s.Title)}{StateSeparator}{s.Resource}");
@@ -114,7 +115,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
     {
         if (this.IsArmed(actionParameter)) return "Archive?";
         if (actionParameter == Back) return "Back";
-        if (actionParameter == New) return "New";
+        if (actionParameter.StartsWith(New, StringComparison.Ordinal) && actionParameter != NewChat) return Faces.NewLabel(this.Board.Online);
         if (actionParameter == NewChat) return "New chat";
         if (actionParameter.StartsWith(Archive, StringComparison.Ordinal)) return "Archive";
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
@@ -132,7 +133,8 @@ public sealed class SessionsFolder : PluginDynamicFolder
     {
         if (this.IsArmed(actionParameter)) return Faces.Glyph("?", imageSize, new BitmapColor(200, 30, 30));
         if (actionParameter == Back) return Faces.Glyph("‹", imageSize);
-        if (actionParameter == New || actionParameter == NewChat) return Faces.Glyph("+", imageSize);
+        if (actionParameter.StartsWith(New, StringComparison.Ordinal) && actionParameter != NewChat) return Faces.NewGlyph(this.Board.Online, imageSize);
+        if (actionParameter == NewChat) return Faces.Glyph("+", imageSize);
         if (actionParameter.StartsWith(Archive, StringComparison.Ordinal)) return Faces.Glyph("✓", imageSize);
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
@@ -210,7 +212,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
         {
             this.ResetLevel(force: true);
         }
-        else if (actionParameter == New)
+        else if (actionParameter.StartsWith(New, StringComparison.Ordinal) && actionParameter != NewChat)
         {
             Opener.Open(Links.NewSession(" "));
         }
