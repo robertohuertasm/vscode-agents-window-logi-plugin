@@ -20,8 +20,9 @@ public sealed class SessionsFolder : PluginDynamicFolder
     private const string ChatPrefix = "c:";
     private static readonly TimeSpan ConfirmWindow = TimeSpan.FromSeconds(3);
 
-    // Folder key names carry the state ("s:Working2|<resource>"), so a state change renames
-    // the key and the host fetches a fresh face instead of reusing a cached one.
+    // Folder key names carry what the key shows (state, chat count, a short hash of the
+    // title), so any visible change renames the key and the host fetches a fresh face and
+    // label instead of reusing cached ones. A new chat's title arrives after its first message.
     private const char StateSeparator = '|';
 
     // How a profile addresses this folder's own key; PluginDynamicFolder has no ButtonImageChanged.
@@ -96,7 +97,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
             foreach (var chat in session.Chats)
             {
                 var marker = this.armed == chat.Resource ? ArmedMarker.ToString() : "";
-                yield return this.CreateCommandName($"{ChatPrefix}{chat.State}{marker}{StateSeparator}{chat.Resource}");
+                yield return this.CreateCommandName($"{ChatPrefix}{chat.State}{TitleTag(chat.Title)}{marker}{StateSeparator}{chat.Resource}");
             }
             yield break;
         }
@@ -104,7 +105,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
         yield return this.CreateCommandName(New);
         foreach (var s in this.Board.Ranked)
         {
-            yield return this.CreateCommandName($"{SessionPrefix}{s.State}{s.Chats.Count}{StateSeparator}{s.Resource}");
+            yield return this.CreateCommandName($"{SessionPrefix}{s.State}{s.Chats.Count}{TitleTag(s.Title)}{StateSeparator}{s.Resource}");
         }
     }
 
@@ -329,6 +330,18 @@ public sealed class SessionsFolder : PluginDynamicFolder
         {
             this.Plugin.Log.Error(e, "could not refresh the Agents window folder");
         }
+    }
+
+    // Stable across runs, unlike string.GetHashCode. Hex only, so it never contains the
+    // separator or the armed marker.
+    private static string TitleTag(string title)
+    {
+        var hash = 2166136261u;
+        foreach (var c in title)
+        {
+            hash = (hash ^ c) * 16777619u;
+        }
+        return "t" + hash.ToString("x8");
     }
 
     private static string Resource(string actionParameter, string prefix)
