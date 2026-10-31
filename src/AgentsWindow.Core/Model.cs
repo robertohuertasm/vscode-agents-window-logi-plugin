@@ -12,7 +12,9 @@ public enum KeyState
 }
 
 // ChatId is the id used in open links; null for the session's default chat.
-public sealed record Chat(string Resource, string? ChatId, string Title, KeyState State);
+// CanArchive is false for chats VS Code refuses to archive on their own: the default chat
+// and chats created as side chats or by tools (agentService.ts, _rejectUnknownChatAction).
+public sealed record Chat(string Resource, string? ChatId, string Title, KeyState State, bool CanArchive = false);
 
 public sealed record Session(
     string Resource,

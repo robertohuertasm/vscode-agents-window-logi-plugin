@@ -8,7 +8,8 @@ using AgentsWindow;
 // key per session. A short press opens the session; a long press opens its menu.
 //
 // Session menu: Back (to sessions), New chat, Archive, then the session's chats. A press
-// on a chat opens it; a long press archives it. Archive actions ask for a second press
+// on a chat opens it; a long press archives it, except for side chats and the main chat,
+// which VS Code only archives with their session. Archive actions ask for a second press
 // within a few seconds, because the Keypad has no undo and the key vanishes at once.
 public sealed class SessionsFolder : PluginDynamicFolder
 {
@@ -168,9 +169,18 @@ public sealed class SessionsFolder : PluginDynamicFolder
                 {
                     this.OpenMenu(Resource(actionParameter, SessionPrefix));
                 }
-                else
+                else if (this.FindChat(Resource(actionParameter, ChatPrefix)) is { } held)
                 {
-                    this.Arm(Resource(actionParameter, ChatPrefix));
+                    if (held.Chat.CanArchive)
+                    {
+                        this.Arm(held.Chat.Resource);
+                    }
+                    else
+                    {
+                        // VS Code rejects archiving side chats and the main chat on their own.
+                        this.Plugin.Log.Info("long press on a chat VS Code cannot archive on its own; opening it");
+                        Opener.Open(Links.OpenSession(held.Session.Resource, held.Chat.ChatId));
+                    }
                 }
                 return true;
             case DeviceButtonEventType.RepeatPress:
@@ -273,7 +283,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
         try
         {
             await this.Owner.Actions.SetChatArchivedAsync(chat.Resource, true, CancellationToken.None);
-            this.Plugin.Log.Info("archived a chat from the Keypad");
+            this.Plugin.Log.Info("asked VS Code to archive a chat");
         }
         catch (Exception e)
         {

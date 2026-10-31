@@ -24,7 +24,10 @@ public static class SessionParser
                 var chatResource = Str(c, "resource");
                 if (chatResource is null || Str(c, "interactivity") == "hidden") continue;
                 if (Status.IsArchivedFlag(Uint(c, "status"))) continue;
-                chats.Add(new Chat(chatResource, Links.ChatId(chatResource, defaultChat), Str(c, "title") ?? "", Status.ToKeyState(Uint(c, "status"))));
+                var chatId = Links.ChatId(chatResource, defaultChat);
+                var originKind = c.TryGetProperty("origin", out var o) && o.ValueKind == JsonValueKind.Object ? Str(o, "kind") : null;
+                var canArchive = chatId is not null && originKind is not ("sideChat" or "tool");
+                chats.Add(new Chat(chatResource, chatId, Str(c, "title") ?? "", Status.ToKeyState(Uint(c, "status")), canArchive));
             }
         }
 

@@ -85,7 +85,8 @@ public class SessionParserTests
           "project":{"uri":"file:///p","displayName":"proj"},"defaultChat":"ahp-chat:/11111111-1111-1111-1111-111111111111",
           "chats":[
             {"resource":"ahp-chat:/11111111-1111-1111-1111-111111111111","title":"main","status":40},
-            {"resource":"ahp-chat:/22222222-2222-2222-2222-222222222222","title":"side","status":33},
+            {"resource":"ahp-chat:/22222222-2222-2222-2222-222222222222","title":"side","status":33,"origin":{"kind":"user"}},
+            {"resource":"ahp-chat:/55555555-5555-5555-5555-555555555555","title":"aside","status":33,"origin":{"kind":"sideChat"}},
             {"resource":"ahp-chat:/33333333-3333-3333-3333-333333333333","title":"worker","status":33,"interactivity":"hidden"},
             {"resource":"ahp-chat:/44444444-4444-4444-4444-444444444444","title":"old","status":97}]}],
          "nextCursor":"c2"}
@@ -94,7 +95,8 @@ public class SessionParserTests
         var s = Assert.Single(SessionParser.ParseList(doc.RootElement));
         Assert.Equal(KeyState.Working, s.State);
         Assert.Equal("proj", s.Project);
-        Assert.Equal(["main", "side"], s.Chats.Select(c => c.Title));
+        Assert.Equal(["main", "side", "aside"], s.Chats.Select(c => c.Title));
+        Assert.Equal([false, true, false], s.Chats.Select(c => c.CanArchive));
         Assert.Null(s.Chats[0].ChatId);
         Assert.Equal("22222222-2222-2222-2222-222222222222", s.Chats[1].ChatId);
         Assert.Equal("c2", SessionParser.NextCursor(doc.RootElement));
