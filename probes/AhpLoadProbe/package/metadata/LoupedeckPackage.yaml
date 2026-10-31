@@ -1,0 +1,14 @@
+type: plugin4
+name: AhpLoadProbe
+displayName: AHP Load Probe
+description: Throwaway probe. Checks that the Agent Host Protocol client works inside Logi Plugin Service. Registers no actions.
+version: 0.0.1
+author: Roberto Huertas
+copyright: Copyright © 2026 Roberto Huertas
+minimumLoupedeckVersion: 6.4
+pluginFileName: AhpLoadProbe.dll
+pluginFolderMac: bin
+supportedDevices:
+    - MxCreativeKeypad
+pluginCapabilities:
+license: MIT

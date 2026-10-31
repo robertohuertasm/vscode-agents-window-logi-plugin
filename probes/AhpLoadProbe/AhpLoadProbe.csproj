@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Throwaway plugin: checks that the AHP .NET client loads and works inside Logi Plugin Service.
+       It registers no actions and only logs aggregate counts. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Loupedeck.AhpLoadProbePlugin</RootNamespace>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <PackageDir>$(MSBuildThisFileDirectory)build/$(Configuration)/</PackageDir>
+    <OutputPath>$(PackageDir)bin/</OutputPath>
+    <PluginDir>$(HOME)/Library/Application Support/Logi/LogiPluginService/Plugins/</PluginDir>
+    <PluginName>AhpLoadProbe</PluginName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LogiPluginApi" Version="6.4.2.3567" ExcludeAssets="runtime;native" />
+    <PackageReference Include="Microsoft.VisualStudioCode.AgentHostProtocol" Version="1.0.0" />
+  </ItemGroup>
+
+  <Target Name="DropPluginApiAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="$([System.String]::Copy('%(Analyzer.Identity)').Contains('/.nuget/packages/'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="CopyPackage" AfterTargets="Build">
+    <ItemGroup>
+      <PackageFiles Include="$(MSBuildThisFileDirectory)package/**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(PackageFiles)" DestinationFolder="$(PackageDir)%(RecursiveDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="LinkPlugin" AfterTargets="CopyPackage" Condition="'$(Configuration)' == 'Debug' and '$(Link)' == 'true'">
+    <WriteLinesToFile File="$(PluginDir)$(PluginName).link" Lines="$([System.IO.Path]::GetFullPath('$(PackageDir)'))" Overwrite="true" />
+    <Exec Command="open loupedeck:plugin/$(PluginName)/reload" ContinueOnError="true" />
+  </Target>
+
+</Project>

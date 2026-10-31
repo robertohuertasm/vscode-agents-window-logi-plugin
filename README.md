@@ -16,8 +16,12 @@ Research notes and decisions live in [robertohuertasm/agent-skills, `labs/projec
 
 - [`probes/AhpProbe`](probes/AhpProbe): connects to the live Agent Host endpoint read-only and prints aggregate counts by provider and status. It never prints titles, IDs, paths, or the connection token.
 
+- [`probes/AhpLoadProbe`](probes/AhpLoadProbe): a throwaway Logi plugin with no actions. On load it connects the same way and logs only counts to `~/Library/Application Support/Logi/LogiPluginService/Logs/plugin_logs/AhpLoadProbe.log`. It proves the client works inside Logi Plugin Service (.NET 10).
+
 ```sh
 dotnet run --project probes/AhpProbe
+dotnet build probes/AhpLoadProbe -p:Link=true   # links into Logi Plugin Service and reloads it
+rm ~/Library/Application\ Support/Logi/LogiPluginService/Plugins/AhpLoadProbe.link   # unlink afterwards
 ```
 
-Requires the .NET 9 SDK and a running VS Code (1.144 or later).
+`AhpProbe` needs the .NET 9 SDK or later, `AhpLoadProbe` the .NET 10 SDK. Both need a running VS Code (1.144 or later).
