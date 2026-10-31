@@ -16,6 +16,10 @@ public sealed class SessionsFolder : PluginDynamicFolder
     private const string SessionPrefix = "s:";
     private const string ChatPrefix = "c:";
 
+    // Folder key names carry the state ("s:Working|<resource>"), so a state change renames
+    // the key and the host fetches a fresh face instead of reusing a cached one.
+    private const char StateSeparator = '|';
+
     // How a profile addresses this folder's own key; PluginDynamicFolder has no ButtonImageChanged.
     private const string FolderActionName = "#DynamicFolder";
 
@@ -78,7 +82,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
             yield return this.CreateCommandName(Back);
             foreach (var chat in session.Chats)
             {
-                yield return this.CreateCommandName(ChatPrefix + chat.Resource);
+                yield return this.CreateCommandName($"{ChatPrefix}{chat.State}{StateSeparator}{chat.Resource}");
             }
             yield break;
         }
@@ -86,7 +90,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
         yield return this.CreateCommandName(New);
         foreach (var s in this.Board.Ranked)
         {
-            yield return this.CreateCommandName(SessionPrefix + s.Resource);
+            yield return this.CreateCommandName($"{SessionPrefix}{s.State}{StateSeparator}{s.Resource}");
         }
     }
 
@@ -96,12 +100,12 @@ public sealed class SessionsFolder : PluginDynamicFolder
         if (actionParameter == New) return "New";
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
-            var s = this.Board.Find(actionParameter[SessionPrefix.Length..]);
+            var s = this.Board.Find(Resource(actionParameter, SessionPrefix));
             return KeyFace.Label(s is null ? null : s.Chats.Count > 1 ? $"{s.Title} ({s.Chats.Count})" : s.Title);
         }
         if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal))
         {
-            return KeyFace.Label(this.FindChat(actionParameter[ChatPrefix.Length..])?.Chat.Title);
+            return KeyFace.Label(this.FindChat(Resource(actionParameter, ChatPrefix))?.Chat.Title);
         }
         return KeyFace.Blank;
     }
@@ -112,11 +116,11 @@ public sealed class SessionsFolder : PluginDynamicFolder
         if (actionParameter == New) return Faces.Glyph("+", imageSize);
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
-            return Faces.Ring(this.Board.Find(actionParameter[SessionPrefix.Length..])?.State ?? KeyState.None, imageSize);
+            return Faces.Ring(this.Board.Find(Resource(actionParameter, SessionPrefix))?.State ?? KeyState.None, imageSize);
         }
         if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal))
         {
-            return Faces.Ring(this.FindChat(actionParameter[ChatPrefix.Length..])?.Chat.State ?? KeyState.None, imageSize);
+            return Faces.Ring(this.FindChat(Resource(actionParameter, ChatPrefix))?.Chat.State ?? KeyState.None, imageSize);
         }
         return Faces.Ring(KeyState.None, imageSize);
     }
@@ -127,7 +131,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
         {
             this.Plugin.Log.Info($"long press received after {buttonEvent.PressDuration} ms");
             this.longPressHandled = true;
-            Opener.Open(Links.OpenSession(actionParameter[SessionPrefix.Length..]));
+            Opener.Open(Links.OpenSession(Resource(actionParameter, SessionPrefix)));
             return true;
         }
         return base.ProcessButtonEvent2(actionParameter, buttonEvent);
@@ -153,7 +157,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
         }
         else if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
-            var resource = actionParameter[SessionPrefix.Length..];
+            var resource = Resource(actionParameter, SessionPrefix);
             if (this.Board.Find(resource) is { Chats.Count: > 1 })
             {
                 this.openSession = resource;
@@ -165,10 +169,17 @@ public sealed class SessionsFolder : PluginDynamicFolder
                 Opener.Open(Links.OpenSession(resource));
             }
         }
-        else if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal) && this.FindChat(actionParameter[ChatPrefix.Length..]) is { } found)
+        else if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal) && this.FindChat(Resource(actionParameter, ChatPrefix)) is { } found)
         {
             Opener.Open(Links.OpenSession(found.Session.Resource, found.Chat.ChatId));
         }
+    }
+
+    private static string Resource(string actionParameter, string prefix)
+    {
+        var rest = actionParameter[prefix.Length..];
+        var separator = rest.IndexOf(StateSeparator);
+        return separator < 0 ? rest : rest[(separator + 1)..];
     }
 
     private void ResetLevel()
