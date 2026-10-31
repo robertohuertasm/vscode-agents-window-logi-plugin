@@ -136,7 +136,6 @@ public sealed class SessionsFolder : PluginDynamicFolder
             return base.ProcessButtonEvent2(actionParameter, buttonEvent);
         }
 
-        this.Plugin.Log.Info($"session key event: {buttonEvent.EventType} after {buttonEvent.PressDuration} ms");
         switch (buttonEvent.EventType)
         {
             case DeviceButtonEventType.Press:
@@ -144,6 +143,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
                 return true;
             case DeviceButtonEventType.LongPress:
                 this.longPressHandled = true;
+                this.Plugin.Log.Info("long press: opening the session directly");
                 Opener.Open(Links.OpenSession(Resource(actionParameter, SessionPrefix)));
                 return true;
             case DeviceButtonEventType.RepeatPress:
