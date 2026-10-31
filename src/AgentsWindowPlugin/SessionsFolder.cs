@@ -31,7 +31,10 @@ public sealed class SessionsFolder : PluginDynamicFolder
     private bool longPressHandled;
     private string[] shownNames = [];
 
-    // The key waiting for a confirming press (Archive, or a chat after a long press).
+    // The key waiting for a confirming press: Archive, or a chat resource after a long press.
+    // Armed keys get ArmedMarker in their name, because the host only reliably redraws a
+    // key when its name changes.
+    private const char ArmedMarker = '!';
     private string? armed;
     private CancellationTokenSource? armTimer;
 
@@ -89,10 +92,11 @@ public sealed class SessionsFolder : PluginDynamicFolder
         {
             yield return this.CreateCommandName(Back);
             yield return this.CreateCommandName(NewChat);
-            yield return this.CreateCommandName(Archive);
+            yield return this.CreateCommandName(this.armed == Archive ? Archive + ArmedMarker : Archive);
             foreach (var chat in session.Chats)
             {
-                yield return this.CreateCommandName($"{ChatPrefix}{chat.State}{StateSeparator}{chat.Resource}");
+                var marker = this.armed == chat.Resource ? ArmedMarker.ToString() : "";
+                yield return this.CreateCommandName($"{ChatPrefix}{chat.State}{marker}{StateSeparator}{chat.Resource}");
             }
             yield break;
         }
@@ -106,11 +110,11 @@ public sealed class SessionsFolder : PluginDynamicFolder
 
     public override string GetCommandDisplayName(string actionParameter, PluginImageSize imageSize)
     {
-        if (this.armed == actionParameter) return "Sure?";
+        if (this.IsArmed(actionParameter)) return "Sure?";
         if (actionParameter == Back) return "Back";
         if (actionParameter == New) return "New";
         if (actionParameter == NewChat) return "New chat";
-        if (actionParameter == Archive) return "Archive";
+        if (actionParameter.StartsWith(Archive, StringComparison.Ordinal)) return "Archive";
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
             return KeyFace.Label(this.Board.Find(Resource(actionParameter, SessionPrefix))?.Title);
@@ -124,10 +128,10 @@ public sealed class SessionsFolder : PluginDynamicFolder
 
     public override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize)
     {
-        if (this.armed == actionParameter) return Faces.Glyph("?", imageSize, new BitmapColor(200, 30, 30));
+        if (this.IsArmed(actionParameter)) return Faces.Glyph("?", imageSize, new BitmapColor(200, 30, 30));
         if (actionParameter == Back) return Faces.Glyph("‹", imageSize);
         if (actionParameter == New || actionParameter == NewChat) return Faces.Glyph("+", imageSize);
-        if (actionParameter == Archive) return Faces.Glyph("✓", imageSize);
+        if (actionParameter.StartsWith(Archive, StringComparison.Ordinal)) return Faces.Glyph("✓", imageSize);
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
             var session = this.Board.Find(Resource(actionParameter, SessionPrefix));
@@ -165,7 +169,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
                 }
                 else
                 {
-                    this.Arm(actionParameter);
+                    this.Arm(Resource(actionParameter, ChatPrefix));
                 }
                 return true;
             case DeviceButtonEventType.RepeatPress:
@@ -186,7 +190,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
 
     private void Tap(string actionParameter)
     {
-        if (this.armed is not null && this.armed != actionParameter)
+        if (this.armed is not null && !this.IsArmed(actionParameter))
         {
             this.Disarm();
         }
@@ -203,7 +207,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
         {
             _ = this.CreateChatAsync(session);
         }
-        else if (actionParameter == Archive && this.openSession is { } toArchive)
+        else if (actionParameter.StartsWith(Archive, StringComparison.Ordinal) && this.openSession is { } toArchive)
         {
             if (this.armed == Archive)
             {
@@ -221,7 +225,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
         }
         else if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal) && this.FindChat(Resource(actionParameter, ChatPrefix)) is { } found)
         {
-            if (this.armed == actionParameter)
+            if (this.armed == found.Chat.Resource)
             {
                 this.Disarm();
                 _ = this.ArchiveChatAsync(found.Session, found.Chat);
@@ -290,16 +294,14 @@ public sealed class SessionsFolder : PluginDynamicFolder
         }
     }
 
-    private void Arm(string actionParameter)
+    private void Arm(string id)
     {
         this.armTimer?.Cancel();
-        var previous = this.armed;
-        this.armed = actionParameter;
+        this.armed = id;
         var timer = this.armTimer = new CancellationTokenSource();
-        if (previous is not null) this.CommandImageChanged(this.CreateCommandName(previous));
-        this.CommandImageChanged(this.CreateCommandName(actionParameter));
+        this.RefreshNames();
         _ = Task.Delay(ConfirmWindow, timer.Token).ContinueWith(
-            _ => { if (this.armed == actionParameter) this.Disarm(); },
+            _ => { if (this.armed == id) this.Disarm(); },
             CancellationToken.None, TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
     }
 
@@ -307,10 +309,25 @@ public sealed class SessionsFolder : PluginDynamicFolder
     {
         this.armTimer?.Cancel();
         this.armTimer = null;
-        if (this.armed is { } key)
+        if (this.armed is null) return;
+        this.armed = null;
+        this.RefreshNames();
+    }
+
+    private bool IsArmed(string actionParameter) =>
+        this.armed is { } id && actionParameter.Contains(ArmedMarker) &&
+        (id == Archive ? actionParameter.StartsWith(Archive, StringComparison.Ordinal) : Resource(actionParameter, ChatPrefix) == id);
+
+    private void RefreshNames()
+    {
+        try
         {
-            this.armed = null;
-            this.CommandImageChanged(this.CreateCommandName(key));
+            this.shownNames = [];
+            this.ButtonActionNamesChanged();
+        }
+        catch (Exception e)
+        {
+            this.Plugin.Log.Error(e, "could not refresh the Agents window folder");
         }
     }
 
