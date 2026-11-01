@@ -13,7 +13,7 @@ internal static class Faces
         using var b = new BitmapBuilder(size);
         b.Clear(BitmapColor.Black);
         var cx = b.Width / 2f;
-        var cy = b.Height * 0.4f;
+        var cy = b.Height * 0.55f;
         var r = Math.Min(b.Width, b.Height) * 0.3f;
         b.FillCircle(cx, cy, r, new BitmapColor(rgb.R, rgb.G, rgb.B));
         var side = (int)(Math.Min(b.Width, b.Height) * 0.38f);
