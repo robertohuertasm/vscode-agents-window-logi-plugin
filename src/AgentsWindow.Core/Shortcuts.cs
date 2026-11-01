@@ -49,8 +49,8 @@ public static class Shortcuts
     // Ids name the actions in profiles; do not rename them.
     public static readonly IReadOnlyList<Shortcut> All =
     [
-        new("primary_sidebar", "Left sidebar", 'B', Mods.Command, "layout-sidebar-left"),
-        new("secondary_sidebar", "Right sidebar", 'B', Mods.Command | Mods.Option, "layout-sidebar-right"),
+        new("primary_sidebar", "Sidebar", 'B', Mods.Command, "layout-sidebar-left"),
+        new("secondary_sidebar", "Right Sidebar", 'B', Mods.Command | Mods.Option, "layout-sidebar-right"),
         new("terminal", "Terminal", 'J', Mods.Command, "terminal"),
         new("files", "Files", 'E', Mods.Command | Mods.Shift, "files"),
         new("changes", "Changes", 'G', Mods.Control | Mods.Shift, "diff-multiple"),

@@ -61,18 +61,16 @@ internal static class Faces
         return b.ToImage();
     }
 
-    // A white codicon above the shortcut that triggers it.
-    public static BitmapImage Shortcut(string icon, string text, PluginImageSize size)
+    // A white codicon above the label row, where Options+ writes the action name.
+    public static BitmapImage Icon(string icon, PluginImageSize size)
     {
         using var b = new BitmapBuilder(size);
         b.Clear(BitmapColor.Black);
-        var side = (int)(Math.Min(b.Width, b.Height) * 0.42f);
+        var side = (int)(Math.Min(b.Width, b.Height) * 0.5f);
         if (Codicon(icon) is { } image)
         {
-            b.DrawImage(image, (b.Width - side) / 2, (int)(b.Height * 0.1f), side, side, BitmapRotation.None);
+            b.DrawImage(image, (b.Width - side) / 2, (int)(b.Height * 0.4f) - side / 2, side, side, BitmapRotation.None);
         }
-        var top = (int)(b.Height * 0.1f) + side;
-        b.DrawText(text, 0, top, b.Width, (int)(b.Height * 0.8f) - top, BitmapColor.White, (int)(b.Height * 0.15f), 0, 0, null);
         return b.ToImage();
     }
 

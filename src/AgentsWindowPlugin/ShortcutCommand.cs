@@ -31,7 +31,7 @@ public sealed class ShortcutCommand : PluginDynamicCommand
         }
     }
 
-    protected override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize) => Faces.Shortcut(this.shortcut.Icon, this.shortcut.Text(OperatingSystem.IsWindows()), imageSize);
+    protected override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize) => Faces.Icon(this.shortcut.Icon, imageSize);
 
     protected override string GetCommandDisplayName(string actionParameter, PluginImageSize imageSize) => this.shortcut.Label;
 }
