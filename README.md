@@ -1,8 +1,15 @@
 # VS Code Agents window Logi plugin
 
-A Logitech MX Creative Keypad plugin that shows VS Code Agents window sessions and their state on the keys, and opens a session with a press.
+Live status of your VS Code Agents window sessions (GitHub Copilot) on the Logitech MX Creative Keypad. Press a key to jump to one. A Logi Options+ plugin built on the Logi Actions SDK, with keys for new sessions and the Agents window's layout shortcuts.
 
 Status: 0.1.0, first working version. Tested on macOS. Windows support is written but untested.
+
+<p align="center">
+  <img src="docs/images/keypad.png" width="420"
+   alt="Nine Keypad keys: one waiting for input, working ones, an unread one, idle ones and empty slots">
+</p>
+
+> The images are diagrams drawn from the plugin's own colors and icons, not photos.
 
 ## Install
 
@@ -25,6 +32,12 @@ Drag these onto keys in Logi Options+ (group **VS Code Agents Window**):
 | **VS Code shortcuts** (folder, group **Shortcuts**) | Opens a folder with **New** (as the New session key) and the seven shortcut keys above, after the back key the Plugin Service draws top left: one Keypad page with everything. |
 
 Session and chat keys show a black Copilot face (codicon) on a disc colored by state: red waiting for input, purple error, amber working, blue finished but not looked at yet (VS Code's blue dot), green idle, dark red VS Code not reachable, dark grey for an empty slot. A chat stopped on a resumable error (VS Code's blue Keep Going or Try Again button) shows purple too, even when VS Code reports it as idle. A session key shows its most urgent chat, so a side chat waiting or unread colors the whole session.
+
+<img src="docs/images/tile-states.png" width="700" alt="Key faces for each state">
+
+<img src="docs/images/folder.png" width="800" alt="The Agents window folder: one key per session, and the session menu a long press opens">
+
+<img src="docs/images/shortcuts.png" width="640" alt="The shortcuts folder and the keys each shortcut sends">
 
 ## How it works
 
