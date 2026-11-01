@@ -2,13 +2,6 @@ using System.Text;
 
 namespace AgentsWindow;
 
-public enum RingStyle
-{
-    Filled,
-    Outline,
-    Dotted,
-}
-
 public readonly record struct Rgb(byte R, byte G, byte B);
 
 // What a key looks like, independent of the Logi drawing API.
@@ -20,15 +13,21 @@ public static class KeyFace
     // unused slot answers with a zero-width space.
     public const string Blank = "\u200B";
 
-    public static (Rgb Color, RingStyle Style) For(KeyState state) => state switch
+    private static readonly Rgb Black = new(0, 0, 0);
+    private static readonly Rgb White = new(255, 255, 255);
+
+    // A Copilot face on a full-key background. Active states color the whole key; idle is
+    // a white face on black, offline a grey one, and an empty slot a barely visible one.
+    // Working uses bright amber with a black face, the only way amber keeps its contrast.
+    public static (Rgb Background, Rgb Face) For(KeyState state) => state switch
     {
-        KeyState.InputNeeded => (new Rgb(230, 40, 40), RingStyle.Filled),
-        KeyState.Error => (new Rgb(200, 60, 200), RingStyle.Filled),
-        KeyState.Working => (new Rgb(240, 180, 0), RingStyle.Filled),
-        KeyState.Unread => (new Rgb(110, 160, 230), RingStyle.Filled),
-        KeyState.Idle => (new Rgb(0, 160, 64), RingStyle.Outline),
-        KeyState.Offline => (new Rgb(140, 50, 50), RingStyle.Dotted),
-        _ => (new Rgb(70, 70, 70), RingStyle.Dotted),
+        KeyState.InputNeeded => (new Rgb(200, 30, 30), White),
+        KeyState.Error => (new Rgb(150, 40, 160), White),
+        KeyState.Working => (new Rgb(240, 180, 0), Black),
+        KeyState.Unread => (new Rgb(40, 100, 200), White),
+        KeyState.Idle => (Black, White),
+        KeyState.Offline => (Black, new Rgb(110, 110, 110)),
+        _ => (Black, new Rgb(45, 45, 45)),
     };
 
     // Truncates by code point so emoji survive.

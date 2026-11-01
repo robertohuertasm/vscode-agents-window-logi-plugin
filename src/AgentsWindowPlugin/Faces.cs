@@ -2,42 +2,31 @@ namespace Loupedeck.AgentsWindowPlugin;
 
 using AgentsWindow;
 
-// Draws key faces: a status ring above the label row Options+ reserves.
+// Draws key faces above the label row Options+ reserves.
 internal static class Faces
 {
-    // `chats` > 1 adds a badge with the chat count at the ring's top right, so keys that
+    // `chats` > 1 adds a badge with the chat count at the face's top right, so keys that
     // open a chat list look different from keys that open a session.
-    public static BitmapImage Ring(KeyState state, PluginImageSize size, int chats = 1)
+    public static BitmapImage State(KeyState state, PluginImageSize size, int chats = 1)
     {
-        var (rgb, style) = KeyFace.For(state);
-        var color = new BitmapColor(rgb.R, rgb.G, rgb.B);
+        var (bg, face) = KeyFace.For(state);
+        var background = new BitmapColor(bg.R, bg.G, bg.B);
         using var b = new BitmapBuilder(size);
-        b.Clear(BitmapColor.Black);
+        b.Clear(background);
+        var side = (int)(Math.Min(b.Width, b.Height) * 0.55f);
         var cx = b.Width / 2f;
         var cy = b.Height * 0.4f;
-        var r = Math.Min(b.Width, b.Height) * 0.26f;
-        switch (style)
+        if (Codicon("copilot", face) is { } image)
         {
-            case RingStyle.Filled:
-                b.FillCircle(cx, cy, r, color);
-                break;
-            case RingStyle.Outline:
-                b.DrawArc((int)cx, (int)cy, (int)r, 0, 360, color, Math.Max(2, b.Width / 20f));
-                break;
-            default:
-                for (var a = 0; a < 360; a += 30)
-                {
-                    b.DrawArc((int)cx, (int)cy, (int)r, a, 12, color, Math.Max(2, b.Width / 24f));
-                }
-                break;
+            b.DrawImage(image, (int)(cx - side / 2f), (int)(cy - side / 2f), side, side, BitmapRotation.None);
         }
 
         if (chats > 1)
         {
-            var br = r * 0.55f;
-            var bx = cx + r * 0.85f;
-            var by = cy - r * 0.85f;
-            b.FillCircle(bx, by, br + Math.Max(2, b.Width / 40f), BitmapColor.Black);
+            var br = side * 0.2f;
+            var bx = cx + side * 0.5f;
+            var by = cy - side * 0.45f;
+            b.FillCircle(bx, by, br + Math.Max(2, b.Width / 40f), background);
             b.FillCircle(bx, by, br, BitmapColor.White);
             var text = chats > 9 ? "9+" : chats.ToString();
             var box = (int)(br * 2);
@@ -74,24 +63,29 @@ internal static class Faces
         return b.ToImage();
     }
 
-    private static readonly Dictionary<string, BitmapImage?> Codicons = [];
+    private static readonly Dictionary<(string, Rgb), BitmapImage?> Codicons = [];
 
-    private static BitmapImage? Codicon(string name)
+    private static BitmapImage? Codicon(string name) => Codicon(name, new Rgb(255, 255, 255));
+
+    private static BitmapImage? Codicon(string name, Rgb color)
     {
         lock (Codicons)
         {
-            if (Codicons.TryGetValue(name, out var cached)) return cached;
+            if (Codicons.TryGetValue((name, color), out var cached)) return cached;
             BitmapImage? image = null;
             using var stream = typeof(Faces).Assembly.GetManifestResourceStream($"Icons.{name}.svg");
             if (stream is not null)
             {
-                // Codicons draw with currentColor; the 16px viewBox scales to any size.
+                // Codicons draw with currentColor; the 16px viewBox scales to any size. The
+                // Plugin Service draws any single-color SVG white, so a second, invisible
+                // color keeps the real one.
                 var svg = new StreamReader(stream).ReadToEnd()
-                    .Replace("fill=\"currentColor\"", "fill=\"#ffffff\"")
-                    .Replace("width=\"16\" height=\"16\"", "width=\"128\" height=\"128\"");
+                    .Replace("currentColor", $"#{color.R:x2}{color.G:x2}{color.B:x2}")
+                    .Replace("width=\"16\" height=\"16\"", "width=\"128\" height=\"128\"")
+                    .Replace("</svg>", "<rect width=\"0.01\" height=\"0.01\" fill=\"#000001\"/></svg>");
                 image = BitmapImage.FromSvg(svg);
             }
-            Codicons[name] = image;
+            Codicons[(name, color)] = image;
             return image;
         }
     }

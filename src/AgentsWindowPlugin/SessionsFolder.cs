@@ -88,7 +88,7 @@ public sealed class SessionsFolder : PluginDynamicFolder
     public override BitmapImage GetButtonImage(PluginImageSize imageSize)
     {
         var top = this.Board.Ranked.FirstOrDefault()?.State ?? KeyState.None;
-        return Faces.Ring(this.Board.Online ? top : KeyState.Offline, imageSize);
+        return Faces.State(this.Board.Online ? top : KeyState.Offline, imageSize);
     }
 
     public override IEnumerable<string> GetButtonPressActionNames(DeviceType deviceType)
@@ -142,13 +142,13 @@ public sealed class SessionsFolder : PluginDynamicFolder
         if (actionParameter.StartsWith(SessionPrefix, StringComparison.Ordinal))
         {
             var session = this.Board.Find(Resource(actionParameter, SessionPrefix));
-            return Faces.Ring(session?.State ?? KeyState.None, imageSize, session?.Chats.Count ?? 1);
+            return Faces.State(session?.State ?? KeyState.None, imageSize, session?.Chats.Count ?? 1);
         }
         if (actionParameter.StartsWith(ChatPrefix, StringComparison.Ordinal))
         {
-            return Faces.Ring(this.FindChat(Resource(actionParameter, ChatPrefix))?.Chat.State ?? KeyState.None, imageSize);
+            return Faces.State(this.FindChat(Resource(actionParameter, ChatPrefix))?.Chat.State ?? KeyState.None, imageSize);
         }
-        return Faces.Ring(KeyState.None, imageSize);
+        return Faces.State(KeyState.None, imageSize);
     }
 
     // Session and chat keys handle their own events so a hold can do something other
