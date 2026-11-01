@@ -66,7 +66,7 @@ public class AgentsWindowPlugin : Plugin
         if (mods.HasFlag(Mods.Shift)) modifiers |= ModifierKey.Shift;
         var key = Enum.Parse<VirtualKeyCode>($"Key{char.ToUpperInvariant(shortcut.Key)}");
         this.KeyboardApi.SendShortcut(key, modifiers);
-        AgentsWindow.Log.Info($"sent {shortcut.Id} ({shortcut.Glyph}) to VS Code");
+        AgentsWindow.Log.Info($"sent {shortcut.Id} ({shortcut.Text(OperatingSystem.IsWindows())}) to VS Code");
     }
 
     private void RedrawRecent()

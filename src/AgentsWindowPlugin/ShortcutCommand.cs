@@ -10,7 +10,7 @@ public sealed class ShortcutCommand : PluginDynamicCommand
     private readonly Shortcut shortcut;
 
     public ShortcutCommand(AgentsWindowPlugin owner, Shortcut shortcut)
-        : base(shortcut.Label, $"Press {shortcut.Glyph} in VS Code", "Shortcuts", DeviceType.All)
+        : base(shortcut.Label, $"Press {shortcut.Text(OperatingSystem.IsWindows())} in VS Code", "Shortcuts", DeviceType.All)
     {
         this.owner = owner;
         this.shortcut = shortcut;
@@ -31,7 +31,7 @@ public sealed class ShortcutCommand : PluginDynamicCommand
         }
     }
 
-    protected override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize) => Faces.Glyph(this.shortcut.Glyph, imageSize, fontScale: 0.24f);
+    protected override BitmapImage GetCommandImage(string actionParameter, PluginImageSize imageSize) => Faces.Shortcut(this.shortcut.Icon, this.shortcut.Text(OperatingSystem.IsWindows()), imageSize);
 
     protected override string GetCommandDisplayName(string actionParameter, PluginImageSize imageSize) => this.shortcut.Label;
 }

@@ -11,6 +11,12 @@ public class ShortcutTests
     }
 
     [Fact]
+    public void WritesWindowsShortcuts()
+    {
+        Assert.Equal(["Ctrl+B", "Ctrl+Alt+B", "Ctrl+J", "Ctrl+Shift+E", "Ctrl+Shift+G", "Ctrl+Shift+B"], Shortcuts.All.Select(s => s.WindowsText));
+    }
+
+    [Fact]
     public void IdsAreUniqueLetters()
     {
         Assert.Equal(Shortcuts.All.Count, Shortcuts.All.Select(s => s.Id).Distinct().Count());
@@ -20,8 +26,8 @@ public class ShortcutTests
     [Fact]
     public void WindowsSwapsCommandForControl()
     {
-        Assert.Equal(Mods.Control | Mods.Option, new Shortcut("x", "x", 'B', Mods.Command | Mods.Option).ForWindows);
-        Assert.Equal(Mods.Control | Mods.Shift, new Shortcut("x", "x", 'G', Mods.Control | Mods.Shift).ForWindows);
+        Assert.Equal(Mods.Control | Mods.Option, new Shortcut("x", "x", 'B', Mods.Command | Mods.Option, "i").ForWindows);
+        Assert.Equal(Mods.Control | Mods.Shift, new Shortcut("x", "x", 'G', Mods.Control | Mods.Shift, "i").ForWindows);
     }
 
     [Fact]

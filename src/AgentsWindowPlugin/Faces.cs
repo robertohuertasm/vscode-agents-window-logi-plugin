@@ -53,11 +53,48 @@ internal static class Faces
 
     public static BitmapImage NewGlyph(bool online, PluginImageSize size) => Glyph(online ? "+" : "▶", size);
 
-    public static BitmapImage Glyph(string text, PluginImageSize size, BitmapColor? background = null, float fontScale = 0.4f)
+    public static BitmapImage Glyph(string text, PluginImageSize size, BitmapColor? background = null)
     {
         using var b = new BitmapBuilder(size);
         b.Clear(background ?? BitmapColor.Black);
-        b.DrawText(text, 0, 0, b.Width, (int)(b.Height * 0.8), BitmapColor.White, (int)(b.Height * fontScale), 0, 0, null);
+        b.DrawText(text, 0, 0, b.Width, (int)(b.Height * 0.8), BitmapColor.White, (int)(b.Height * 0.4), 0, 0, null);
         return b.ToImage();
+    }
+
+    // A white codicon above the shortcut that triggers it.
+    public static BitmapImage Shortcut(string icon, string text, PluginImageSize size)
+    {
+        using var b = new BitmapBuilder(size);
+        b.Clear(BitmapColor.Black);
+        var side = (int)(Math.Min(b.Width, b.Height) * 0.42f);
+        if (Codicon(icon) is { } image)
+        {
+            b.DrawImage(image, (b.Width - side) / 2, (int)(b.Height * 0.1f), side, side, BitmapRotation.None);
+        }
+        var top = (int)(b.Height * 0.1f) + side;
+        b.DrawText(text, 0, top, b.Width, (int)(b.Height * 0.8f) - top, BitmapColor.White, (int)(b.Height * 0.15f), 0, 0, null);
+        return b.ToImage();
+    }
+
+    private static readonly Dictionary<string, BitmapImage?> Codicons = [];
+
+    private static BitmapImage? Codicon(string name)
+    {
+        lock (Codicons)
+        {
+            if (Codicons.TryGetValue(name, out var cached)) return cached;
+            BitmapImage? image = null;
+            using var stream = typeof(Faces).Assembly.GetManifestResourceStream($"Icons.{name}.svg");
+            if (stream is not null)
+            {
+                // Codicons draw with currentColor; the 16px viewBox scales to any size.
+                var svg = new StreamReader(stream).ReadToEnd()
+                    .Replace("fill=\"currentColor\"", "fill=\"#ffffff\"")
+                    .Replace("width=\"16\" height=\"16\"", "width=\"128\" height=\"128\"");
+                image = BitmapImage.FromSvg(svg);
+            }
+            Codicons[name] = image;
+            return image;
+        }
     }
 }

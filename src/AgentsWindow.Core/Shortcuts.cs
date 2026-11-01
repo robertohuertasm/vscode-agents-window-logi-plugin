@@ -11,8 +11,9 @@ public enum Mods
 }
 
 // A VS Code keybinding sent from a key. Key is a letter A–Z. Mods are the macOS
-// modifiers; ForWindows gives the default Windows binding (Cmd → Ctrl, Option → Alt).
-public sealed record Shortcut(string Id, string Label, char Key, Mods Mods)
+// modifiers; ForWindows gives the Windows binding (Cmd → Ctrl; Option is Alt there).
+// Icon names a codicon embedded in the plugin.
+public sealed record Shortcut(string Id, string Label, char Key, Mods Mods, string Icon)
 {
     public Mods ForWindows => Mods.HasFlag(Mods.Command)
         ? (Mods & ~Mods.Command) | Mods.Control
@@ -25,19 +26,35 @@ public sealed record Shortcut(string Id, string Label, char Key, Mods Mods)
         + (Mods.HasFlag(Mods.Shift) ? "⇧" : "")
         + (Mods.HasFlag(Mods.Command) ? "⌘" : "")
         + char.ToUpperInvariant(Key);
+
+    // As Windows menus write it: Ctrl+Alt+Shift+B.
+    public string WindowsText =>
+        string.Join("+", new[]
+        {
+            ForWindows.HasFlag(Mods.Control) ? "Ctrl" : null,
+            ForWindows.HasFlag(Mods.Option) ? "Alt" : null,
+            ForWindows.HasFlag(Mods.Shift) ? "Shift" : null,
+            char.ToUpperInvariant(Key).ToString(),
+        }.Where(part => part is not null));
+
+    public string Text(bool windows) => windows ? WindowsText : Glyph;
 }
 
+// Bindings as VS Code 1.144 registers them in the Agents window
+// (sessions.desktop.main.js). Changes is the only one with its own macOS binding;
+// Browser is Ctrl+Shift+B on Windows too, and in the Agents window it wins over
+// Run Build Task.
 public static class Shortcuts
 {
     // Ids name the actions in profiles; do not rename them.
     public static readonly IReadOnlyList<Shortcut> All =
     [
-        new("primary_sidebar", "Left sidebar", 'B', Mods.Command),
-        new("secondary_sidebar", "Right sidebar", 'B', Mods.Command | Mods.Option),
-        new("terminal", "Terminal", 'J', Mods.Command),
-        new("files", "Files", 'E', Mods.Command | Mods.Shift),
-        new("changes", "Changes", 'G', Mods.Control | Mods.Shift),
-        new("browser", "Browser", 'B', Mods.Command | Mods.Shift),
+        new("primary_sidebar", "Left sidebar", 'B', Mods.Command, "layout-sidebar-left"),
+        new("secondary_sidebar", "Right sidebar", 'B', Mods.Command | Mods.Option, "layout-sidebar-right"),
+        new("terminal", "Terminal", 'J', Mods.Command, "terminal"),
+        new("files", "Files", 'E', Mods.Command | Mods.Shift, "files"),
+        new("changes", "Changes", 'G', Mods.Control | Mods.Shift, "diff-multiple"),
+        new("browser", "Browser", 'B', Mods.Command | Mods.Shift, "globe"),
     ];
 }
 
