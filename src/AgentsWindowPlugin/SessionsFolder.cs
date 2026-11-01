@@ -64,16 +64,19 @@ public sealed class SessionsFolder : PluginDynamicFolder
     }
 
     // The host's own back key closes the folder without telling RunCommand, so the
-    // level is reset whenever the folder opens or closes. Otherwise it reopens on the
-    // menu of the last session.
+    // level is reset whenever the folder opens or closes. Activate always republishes
+    // the names: the reset in Deactivate reaches a closed folder, which the host ignores,
+    // so it would otherwise reopen on the cached keys of the last session menu.
     public override bool Activate()
     {
-        this.ResetLevel();
+        this.Plugin.Log.Info($"Agents window folder opened{(this.openSession is null ? "" : " on a session menu; back to sessions")}");
+        this.ResetLevel(force: true);
         return true;
     }
 
     public override bool Deactivate()
     {
+        this.Plugin.Log.Info("Agents window folder closed");
         this.ResetLevel();
         return true;
     }
