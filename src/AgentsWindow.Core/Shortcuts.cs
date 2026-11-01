@@ -54,6 +54,7 @@ public static class Shortcuts
         new("terminal", "Terminal", 'J', Mods.Command, "terminal"),
         new("files", "Files", 'E', Mods.Command | Mods.Shift, "files"),
         new("changes", "Changes", 'G', Mods.Control | Mods.Shift, "diff-multiple"),
+        new("search", "Search", 'F', Mods.Command | Mods.Shift, "search"),
         new("browser", "Browser", 'B', Mods.Command | Mods.Shift, "globe"),
     ];
 }

@@ -7,13 +7,13 @@ public class ShortcutTests
     [Fact]
     public void DrawsGlyphsInMacOrder()
     {
-        Assert.Equal(["⌘B", "⌥⌘B", "⌘J", "⇧⌘E", "⌃⇧G", "⇧⌘B"], Shortcuts.All.Select(s => s.Glyph));
+        Assert.Equal(["⌘B", "⌥⌘B", "⌘J", "⇧⌘E", "⌃⇧G", "⇧⌘F", "⇧⌘B"], Shortcuts.All.Select(s => s.Glyph));
     }
 
     [Fact]
     public void WritesWindowsShortcuts()
     {
-        Assert.Equal(["Ctrl+B", "Ctrl+Alt+B", "Ctrl+J", "Ctrl+Shift+E", "Ctrl+Shift+G", "Ctrl+Shift+B"], Shortcuts.All.Select(s => s.WindowsText));
+        Assert.Equal(["Ctrl+B", "Ctrl+Alt+B", "Ctrl+J", "Ctrl+Shift+E", "Ctrl+Shift+G", "Ctrl+Shift+F", "Ctrl+Shift+B"], Shortcuts.All.Select(s => s.WindowsText));
     }
 
     [Fact]
