@@ -4,6 +4,14 @@ A Logitech MX Creative Keypad plugin that shows VS Code Agents window sessions a
 
 Status: 0.1.0, first working version. Tested on macOS. Windows support is written but untested.
 
+## Install
+
+Requires macOS, VS Code 1.144 or later, Logi Options+ with Logi Plugin Service 6.4 or later, and an MX Creative Keypad (or Loupedeck CT).
+
+1. Download `AgentsWindow_<version>.lplug4` from the [latest release](https://github.com/robertohuertasm/vscode-agents-window-logi-plugin/releases/latest).
+2. Double-click it. Logi Options+ installs the plugin.
+3. In Options+, select the Keypad, open **All actions**, and drag the actions below onto keys.
+
 ## Actions
 
 Drag these onto keys in Logi Options+ (group **VS Code Agents Window**):
@@ -53,6 +61,10 @@ dotnet clean src/AgentsWindowPlugin       # removes the link
 
 The log is at `~/Library/Application Support/Logi/LogiPluginService/Logs/plugin_logs/AgentsWindow.log` on macOS and `%LOCALAPPDATA%\Logi\LogiPluginService\Logs\plugin_logs\AgentsWindow.log` on Windows. A warning that the service "Cannot create dynamic action" for `RecentChatCommand` is expected: the plugin adds those actions itself.
 
+## Release
+
+Set `version` in `package/metadata/LoupedeckPackage.yaml`, commit, and push a matching tag (`git tag v0.1.0 && git push origin v0.1.0`). The release workflow runs the tests, builds Release, packs and verifies `AgentsWindow_<version>.lplug4` with `LogiPluginTool`, and attaches it to a GitHub Release. To pack locally: `dotnet build src/AgentsWindowPlugin -c Release`, then `logiplugintool pack build/Release AgentsWindow_<version>.lplug4`. Remove a dev link with `dotnet clean src/AgentsWindowPlugin` before installing the package.
+
 ## Probes
 
 - [`probes/AhpProbe`](probes/AhpProbe): connects to the live Agent Host endpoint read-only and prints aggregate counts by provider and status.
@@ -63,3 +75,7 @@ dotnet run --project probes/AhpProbe
 dotnet build probes/AhpLoadProbe -p:Link=true
 rm ~/Library/Application\ Support/Logi/LogiPluginService/Plugins/AhpLoadProbe.link
 ```
+
+## License
+
+MIT. See [LICENSE](LICENSE). Codicons are CC BY 4.0.

@@ -65,8 +65,8 @@ public class LinksTests
 {
     [Fact]
     public void OpenSessionLink() =>
-        Assert.Equal("vscode://agents/agent-host-session/ahp-session/71a0899e-5e04-4580-9dcf-14d685a669e7",
-            Links.OpenSession("ahp-session:/71a0899e-5e04-4580-9dcf-14d685a669e7"));
+        Assert.Equal("vscode://agents/agent-host-session/ahp-session/0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+            Links.OpenSession("ahp-session:/0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"));
 
     [Fact]
     public void OpenChatLinkDoubleEncodesChatId() =>
@@ -81,10 +81,10 @@ public class LinksTests
     public void NewSessionLink() => Assert.Equal("vscode://agents/new?prompt=%20", Links.NewSession(" "));
 
     [Theory]
-    [InlineData("ahp-chat:/2d523c65-e8e3-409f-8671-e098a2b1d71e", null, "2d523c65-e8e3-409f-8671-e098a2b1d71e")]
+    [InlineData("ahp-chat:/f1e2d3c4-b5a6-4978-8f6e-5d4c3b2a1f0e", null, "f1e2d3c4-b5a6-4978-8f6e-5d4c3b2a1f0e")]
     [InlineData("ahp-chat://default/YWJj", null, null)]
     [InlineData("ahp-chat://peer1/YWJj", null, "peer1")]
-    [InlineData("ahp-chat:/2d523c65-e8e3-409f-8671-e098a2b1d71e", "ahp-chat:/2d523c65-e8e3-409f-8671-e098a2b1d71e", null)]
+    [InlineData("ahp-chat:/f1e2d3c4-b5a6-4978-8f6e-5d4c3b2a1f0e", "ahp-chat:/f1e2d3c4-b5a6-4978-8f6e-5d4c3b2a1f0e", null)]
     public void ChatIds(string resource, string? defaultChat, string? expected) => Assert.Equal(expected, Links.ChatId(resource, defaultChat));
 }
 
@@ -201,16 +201,16 @@ public class KeyFaceTests
 
 public class ChatUrisTests
 {
-    private static readonly Guid Id = Guid.Parse("2d523c65-e8e3-409f-8671-e098a2b1d71e");
+    private static readonly Guid Id = Guid.Parse("f1e2d3c4-b5a6-4978-8f6e-5d4c3b2a1f0e");
 
     [Fact]
     public void OpaqueWhenDefaultChatIsOpaque() =>
-        Assert.Equal("ahp-chat:/2d523c65-e8e3-409f-8671-e098a2b1d71e",
+        Assert.Equal("ahp-chat:/f1e2d3c4-b5a6-4978-8f6e-5d4c3b2a1f0e",
             ChatUris.MintPeer("ahp-session:/s", "ahp-chat:/11111111-1111-1111-1111-111111111111", Id));
 
     [Fact]
     public void ShapedWhenDefaultChatIsShaped() =>
-        Assert.Equal("ahp-chat://2d523c65-e8e3-409f-8671-e098a2b1d71e/YWhwLXNlc3Npb246L3M",
+        Assert.Equal("ahp-chat://f1e2d3c4-b5a6-4978-8f6e-5d4c3b2a1f0e/YWhwLXNlc3Npb246L3M",
             ChatUris.MintPeer("ahp-session:/s", "ahp-chat://default/YWhwLXNlc3Npb246L3M", Id));
 
     [Fact]
