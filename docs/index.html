@@ -3,7 +3,7 @@
 <title>VS Code Agents window on the MX Creative Keypad</title>
 <meta name="description" content="Live status of your VS Code Agents window sessions (GitHub Copilot) on the Logitech MX Creative Keypad. Press a key to jump to one. A Logi Options+ plugin built on the Logi Actions SDK.">
 <meta property="og:title" content="VS Code Agents window on the MX Creative Keypad"><meta property="og:description" content="Live status of your VS Code Agents window sessions (GitHub Copilot) on the Logitech MX Creative Keypad. Press a key to jump to one.">
-<meta property="og:image" content="images/keypad.png"><style>
+<meta property="og:image" content="images/keypad-physical.png"><style>
 :root{--bg:#0f1012;--card:#17181b;--fg:#e8e8ea;--muted:#a0a3a8;--line:#2a2c30;--accent:#f0b400}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}
 a{color:#7fb0ff}main{max-width:980px;margin:0 auto;padding:0 24px 80px}
@@ -23,21 +23,21 @@ ol li{margin:6px 0}.video{aspect-ratio:16/9;background:var(--card);border:1px da
 <body><main>
 <header class="hero"><h1>VS Code Agents window on the MX Creative Keypad</h1><p class="tag">Live status of your VS Code Agents window sessions (GitHub Copilot) on the Logitech MX Creative Keypad. Press a key to jump to one.</p>
 <a class="btn" href="https://github.com/robertohuertasm/vscode-agents-window-logi-plugin/releases/latest">Download AgentsWindow.lplug4</a><a class="btn alt" href="https://github.com/robertohuertasm/vscode-agents-window-logi-plugin">Source on GitHub</a>
-<img src="images/keypad.png" alt="Nine Keypad keys colored by session state"></header>
+<img src="images/keypad-physical.png" alt="Nine Keypad keys colored by session state"></header>
 
 <section><h2>Demo</h2><div class="video">Video coming soon</div></section>
 
-<section><h2>Key colors</h2><img src="images/tile-states.png" alt="Key faces for each state">
+<section><h2>Key colors</h2><img src="images/tile-states-physical.png" alt="Key faces for each state">
 <table><tr><th>Color</th><th>Meaning</th></tr><tr><td>Red</td><td>Waiting for you: a question or an approval.</td></tr><tr><td>Purple</td><td>Error, including a turn stopped on Keep Going or Try Again.</td></tr><tr><td>Amber</td><td>Working.</td></tr><tr><td>Blue</td><td>Finished, not looked at yet (VS Code&#x27;s blue dot).</td></tr><tr><td>Green</td><td>Idle.</td></tr><tr><td>Dark red</td><td>VS Code is not reachable.</td></tr><tr><td>Dark grey</td><td>Empty slot.</td></tr></table>
 <p class="note">A session key shows its most urgent chat, so a side chat waiting for you colors the whole session.</p></section>
 
 <section><h2>Actions</h2><p>Drag them onto keys in Logi Options+ (All actions → VS Code Agents Window).</p>
 <table><tr><th>Action</th><th>What it does</th></tr><tr><td>Recent chat 1–9</td><td>The Nth chat across all sessions, most urgent first. Press opens it; long press archives it after a second press.</td></tr><tr><td>New session</td><td>Opens the Agents window&#x27;s new-session composer. Reads Start VS Code when VS Code is closed.</td></tr><tr><td>Agents window (folder)</td><td>One key per session with a chat-count badge. Long press opens the session menu: Back, New chat, Archive, and its chats.</td></tr><tr><td>Shortcut keys</td><td>Sidebar, Right Sidebar, Terminal, Files, Changes, Search, Browser. VS Code comes to the front, then the keys are sent.</td></tr><tr><td>VS Code shortcuts (folder)</td><td>New plus the seven shortcuts on one Keypad page.</td></tr></table></section>
 
-<section><h2>The Agents window folder</h2><img src="images/folder.png" alt="One key per session, and the menu a long press opens">
+<section><h2>The Agents window folder</h2><img src="images/folder-physical.png" alt="One key per session, and the menu a long press opens">
 <p>A press opens the session. A long press opens its menu. Archive asks for a second press within 3 seconds.</p></section>
 
-<section><h2>Shortcuts</h2><img src="images/shortcuts.png" alt="The shortcuts folder">
+<section><h2>Shortcuts</h2><img src="images/shortcuts-physical.png" alt="The shortcuts folder">
 <table><tr><th>Key</th><th>macOS</th><th>Windows (untested)</th></tr><tr><td>Sidebar</td><td><kbd>⌘B</kbd></td><td><kbd>Ctrl+B</kbd></td></tr><tr><td>Right Sidebar</td><td><kbd>⌥⌘B</kbd></td><td><kbd>Ctrl+Alt+B</kbd></td></tr><tr><td>Terminal</td><td><kbd>⌘J</kbd></td><td><kbd>Ctrl+J</kbd></td></tr><tr><td>Files</td><td><kbd>⇧⌘E</kbd></td><td><kbd>Ctrl+Shift+E</kbd></td></tr><tr><td>Changes</td><td><kbd>⌃⇧G</kbd></td><td><kbd>Ctrl+Shift+G</kbd></td></tr><tr><td>Search</td><td><kbd>⇧⌘F</kbd></td><td><kbd>Ctrl+Shift+F</kbd></td></tr><tr><td>Browser</td><td><kbd>⇧⌘B</kbd></td><td><kbd>Ctrl+Shift+B</kbd></td></tr></table></section>
 
 <section><h2>Install</h2><ol>
