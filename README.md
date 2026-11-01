@@ -47,7 +47,7 @@ Session and chat keys show a black Copilot face (codicon) on a disc colored by s
 - **Focus:** a press opens `vscode://agents/agent-host-session/<provider>/<sessionId>[/chat/<chatId>]`, which VS Code routes to the Agents window. New session uses `vscode://agents/new?prompt=`.
 - **Client:** the official .NET client, [`Microsoft.VisualStudioCode.AgentHostProtocol`](https://www.nuget.org/packages/Microsoft.VisualStudioCode.AgentHostProtocol).
 
-Research notes and decisions live in [robertohuertasm/agent-skills, `labs/projects/agent-monitoring`](https://github.com/robertohuertasm/agent-skills/tree/main/labs/projects/agent-monitoring). The plugin layout follows [niklasberglund/herdr-logi-plugin](https://github.com/niklasberglund/herdr-logi-plugin).
+The plugin layout follows [niklasberglund/herdr-logi-plugin](https://github.com/niklasberglund/herdr-logi-plugin).
 
 ## Layout
 
