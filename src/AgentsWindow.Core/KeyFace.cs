@@ -13,21 +13,18 @@ public static class KeyFace
     // unused slot answers with a zero-width space.
     public const string Blank = "\u200B";
 
-    private static readonly Rgb Black = new(0, 0, 0);
-    private static readonly Rgb White = new(255, 255, 255);
-
-    // A Copilot face on a full-key background. Active states color the whole key; idle is
-    // a white face on black, offline a grey one, and an empty slot a barely visible one.
-    // Working uses bright amber with a black face, the only way amber keeps its contrast.
-    public static (Rgb Background, Rgb Face) For(KeyState state) => state switch
+    // A black Copilot face on a disc colored by state, on black. The Plugin Service only
+    // lets a plugin draw the image square above the label row, so the key's own background
+    // cannot change color; a black square blends into the key.
+    public static Rgb For(KeyState state) => state switch
     {
-        KeyState.InputNeeded => (new Rgb(200, 30, 30), White),
-        KeyState.Error => (new Rgb(150, 40, 160), White),
-        KeyState.Working => (new Rgb(240, 180, 0), Black),
-        KeyState.Unread => (new Rgb(40, 100, 200), White),
-        KeyState.Idle => (Black, White),
-        KeyState.Offline => (Black, new Rgb(110, 110, 110)),
-        _ => (Black, new Rgb(45, 45, 45)),
+        KeyState.InputNeeded => new Rgb(230, 40, 40),
+        KeyState.Error => new Rgb(200, 60, 200),
+        KeyState.Working => new Rgb(240, 180, 0),
+        KeyState.Unread => new Rgb(110, 160, 230),
+        KeyState.Idle => new Rgb(0, 160, 64),
+        KeyState.Offline => new Rgb(140, 50, 50),
+        _ => new Rgb(45, 45, 45),
     };
 
     // Truncates by code point so emoji survive.

@@ -5,28 +5,29 @@ using AgentsWindow;
 // Draws key faces above the label row Options+ reserves.
 internal static class Faces
 {
-    // `chats` > 1 adds a badge with the chat count at the face's top right, so keys that
+    // `chats` > 1 adds a badge with the chat count at the disc's top right, so keys that
     // open a chat list look different from keys that open a session.
     public static BitmapImage State(KeyState state, PluginImageSize size, int chats = 1)
     {
-        var (bg, face) = KeyFace.For(state);
-        var background = new BitmapColor(bg.R, bg.G, bg.B);
+        var rgb = KeyFace.For(state);
         using var b = new BitmapBuilder(size);
-        b.Clear(background);
-        var side = (int)(Math.Min(b.Width, b.Height) * 0.55f);
+        b.Clear(BitmapColor.Black);
         var cx = b.Width / 2f;
         var cy = b.Height * 0.4f;
-        if (Codicon("copilot", face) is { } image)
+        var r = Math.Min(b.Width, b.Height) * 0.3f;
+        b.FillCircle(cx, cy, r, new BitmapColor(rgb.R, rgb.G, rgb.B));
+        var side = (int)(Math.Min(b.Width, b.Height) * 0.38f);
+        if (Codicon("copilot", new Rgb(0, 0, 0)) is { } image)
         {
             b.DrawImage(image, (int)(cx - side / 2f), (int)(cy - side / 2f), side, side, BitmapRotation.None);
         }
 
         if (chats > 1)
         {
-            var br = side * 0.2f;
-            var bx = cx + side * 0.5f;
-            var by = cy - side * 0.45f;
-            b.FillCircle(bx, by, br + Math.Max(2, b.Width / 40f), background);
+            var br = r * 0.4f;
+            var bx = cx + r * 0.8f;
+            var by = cy - r * 0.8f;
+            b.FillCircle(bx, by, br + Math.Max(2, b.Width / 40f), BitmapColor.Black);
             b.FillCircle(bx, by, br, BitmapColor.White);
             var text = chats > 9 ? "9+" : chats.ToString();
             var box = (int)(br * 2);
